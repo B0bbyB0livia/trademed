@@ -1,0 +1,42 @@
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Description</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @shippingoption.description %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Price</strong>
+  </div>
+  <div class="col-md-9">
+    <%= currency_format @shippingoption.price %> <%=@shippingoption.currency%>
+  </div>
+</p>
+</div>
+
+<div>
+<%= link_to 'Edit', edit_shippingoption_path(@shippingoption), class: 'btn btn-primary form-button' %>
+<%= link_to 'Delete', '#confirm_delete', class: 'btn btn-danger form-button' %>
+</div>
+
+<div id="confirm_delete" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Delete</h3>
+   <p>
+   Are you sure you want to delete this shipping option?
+   It will be removed from all products currently using this shipping option.
+   </p>
+   <%= form_tag(@shippingoption,  method: :delete) do %>
+     <%= submit_tag("Delete", class: 'btn btn-danger') %>
+     <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+   <% end %>
+ </div>
+</div>

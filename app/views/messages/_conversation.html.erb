@@ -1,0 +1,50 @@
+<%# Originally timestamps were not displayed to increase security of traffic correlation. Then decided that displaying minute, not seconds mitigates the risk somewhat.
+    However, haven't found a nice way to display the timestamps without making message list ugly. So make timestamps available in source html only. %>
+<!-- notice: individial message timestamps are only available in source html - css class display_none. -->
+<% encrypted_messages = {} %>
+<%# sort hash by keys %>
+<% @message_daygroups.sort.reverse.each do |day, message_refs| %>
+  <div class="daygroup">
+    <div class="daygroupdate"><%= day.in_time_zone(current_user.timezone).strftime('%F') %></div>
+    <% message_refs.sort_by{|msg| msg.created_at}.reverse.each do |message_ref| %>
+      <% cssclass = [] %>
+      <% cssclass.push message_ref.direction == 'sent' ? 'sent' : 'received' %>
+      <% if message_ref.message.body[/-----BEGIN/] %>
+      <%   cssclass.push 'encrypted' %>
+      <% else %>
+      <%   cssclass.push 'plaintext' %>
+      <% end %>
+      <div class="daygroupdate display_none"><%=message_ref.created_at.in_time_zone(current_user.timezone).strftime('%H:%M') %></div>
+      <div class="message <%= cssclass.join(' ') %>">
+<%= message_ref.message.body.split("\r\n").collect{ |line| h line}.join("<br>").html_safe  %>
+        <% if cssclass.include?('encrypted') %>
+          <div class="pull-right"><%= link_to("Copy", "#pgp_message_copy_#{message_ref.id}") %></div>
+          <% encrypted_messages[message_ref.id] = message_ref.message.body %>
+        <%end%>
+      </div>
+<%# The above message is printed on one long line in the source code with no newline chars.
+    This allows copying PGP messages correctly while using the break-word styling in Firefox.
+    Chrome doesn't have the copy problem that Firefox has. %>
+    <% end %>
+  </div><%# daygroup %>
+
+<% end %>
+
+<%# These modals rendered at bottom of page instead of loop above just to make code and html tidier %>
+<% encrypted_messages.each do |id, body| %>
+  <div id="pgp_message_copy_<%=id%>" class="modalDialog" hidden>
+  <div>
+    <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+    <h3>Copy PGP message</h3>
+    <p>click text box and press
+       <kbd>ctrl a</kbd>
+       <kbd>ctrl c</kbd>
+    </p>
+
+    <textarea readonly rows="15" class="form-control pgp-textarea">
+<%= body %>
+    </textarea>
+    <%= link_to 'Close', '#close', class: 'btn btn-default form-button' %>
+  </div>
+  </div>
+<%end%>

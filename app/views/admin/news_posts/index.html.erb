@@ -1,0 +1,31 @@
+<h3>News Posts</h3>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Message</th>
+      <th colspan=1"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @news_posts.each do |post| %>
+      <tr>
+        <td class="nowrap"><%= post.post_date.in_time_zone(admin_user.timezone).to_s(:FHMnozone) %></td>
+        <td><%= simple_format h(post.message) %></td>
+        <td class="nowrap">
+          <div>
+          <%# Put the edit link inside form just for formatting so they are one same line %>
+          <%= form_tag([:admin, post],  method: :delete) do %>
+            <%= link_to 'Edit', edit_admin_news_post_path(post), class: "btn btn-primary" %>
+            <%= submit_tag("Delete", class: 'btn btn-danger') %>
+          <% end %>
+          </div>
+        </td>
+      </tr>
+    <%end%>
+
+  </tbody>
+</table>
+<p><%= link_to 'Add News post', new_admin_news_post_path(), class: "btn btn-primary" %></p>

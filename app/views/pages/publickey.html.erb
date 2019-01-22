@@ -1,0 +1,25 @@
+<h3>Public key</h3>
+<p>
+Please import this PGP key so you can authenticate this website in future.
+</p>
+Bitcoin payment addresses for orders will always be signed with this key.
+</p>
+<p>
+You should bookmark this site and always use the bookmark for future access to avoid phishing attacks.
+</p>
+
+<p>
+Key ID / fingerprint :
+<pre>
+<%= WebsiteGpgKey.fingerprint %>
+</pre>
+
+Key data for importing :
+<pre>
+<%= WebsiteGpgKey.pubkey %>
+</pre>
+</p>
+
+<% if flash.key?(:newuser) %>
+<%= link_to 'Continue', root_path, class: 'btn btn-primary' %>
+<% end %>

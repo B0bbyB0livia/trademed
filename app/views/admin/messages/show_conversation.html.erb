@@ -1,0 +1,17 @@
+<h3>Messages: <%= @user.displayname %> / <%=@otherparty.displayname %></h3>
+
+<p>
+Messages received by <%=@user.displayname%> are displayed brown color. This is similar to what the user will see
+except admin can see <i>deleted</i> messages appended with a delineation sentance between.
+</p>
+
+<div class="row">
+ <div class="col-md-8">
+
+  <%= render "conversation" %>
+  <% if @deleted_messages.size > 0 %>
+    <p>Messages that have no references pointing to them (they were deleted by <%=@user.displayname%>) are shown below.</p>
+    <%= render "deleted_messages" %>
+  <%end%>
+ </div>
+</div>

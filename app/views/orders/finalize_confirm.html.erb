@@ -1,0 +1,21 @@
+<h3>Confirm finalize</h3>
+
+<p>
+<strong>Order id:</strong> <%=@order.id%>
+</p>
+<p>
+<strong>Product:</strong> <%=@order.title%>
+</p>
+<p>
+<strong>Vendor:</strong> <%=@order.vendor.displayname%>
+</p>
+
+<p>
+This will pay the vendor 100% of funds paid.
+</p>
+<p>
+ <%= form_for(@order, method: 'post', url: finalize_order_path(@order, return_to_index: true) ) do |f| %>
+   <%= f.submit 'Finalize', class: 'btn btn-success form-button' %>
+   <%= link_to 'Cancel', orders_path(), class: 'btn btn-default form-button' %>
+ <% end %>
+</p>

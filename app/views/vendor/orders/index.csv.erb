@@ -1,0 +1,15 @@
+<% if @orders.size > 0 %>
+  Creation time,Buyer,Product,Total quantity,Price in <%=current_user.currency%>,Pay price,Currency code,Exchange rate <%=current_user.currency%>,Order status
+<%end%>
+<% @orders.each do |order| %>
+  <%= "%s,%s,%s,%g,%s,%s,%s,%s,%s" % [
+    order.created_at.in_time_zone(current_user.timezone).to_s(:FHMnozone),
+    order.buyer.displayname,
+    order.title,
+    order.total_quantity,
+    order.total_price_in_currency(current_user.currency).round(2),
+    order.btc_price,
+    order.payment_method.code,
+    order.get_exchange_rate(session_user.currency).round(2),
+    order.status] %>
+<% end %>

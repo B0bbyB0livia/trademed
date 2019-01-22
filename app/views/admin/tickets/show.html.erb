@@ -1,0 +1,99 @@
+<%= render partial: 'form_errors', locals: { what: @ticket } %>
+
+<h3>Ticket</h3>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Title</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @ticket.title %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Displayname</strong>
+  </div>
+  <div class="col-md-9">
+    <%= link_to @ticket.user.displayname, admin_user_path(@ticket.user) %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Opened date</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @ticket.created_at.to_s(:FHM) %>
+    <%= @ticket.created_at.in_time_zone(admin_user.timezone).strftime('%F') %>
+  </div>
+</p>
+</div>
+
+<%= form_for([:admin, @ticket]) do |f| %>
+
+<div class="row">
+<p>
+  <div class="form-group">
+    <%= f.label :status, class: 'col-md-3 control-label' %>
+    <div class="col-sm-2">
+    <%= f.select(:status, %w(open closed info), {}, class: 'form-control') %>
+    </div>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<div class="col-md-8">
+    <% newest_ticket_message = @ticket.ticket_messages.order('created_at DESC').first %>
+    <%= f.fields_for :ticket_messages do |tm| %>
+        <%# Only want to have form for updating the newest TicketMessage the user has created %>
+        <% next unless tm.object == newest_ticket_message %>
+        <p>
+        <div class="form-group">
+          <%= tm.label :response %>
+          <%= tm.text_area :response, rows: 5, class: 'form-control' %>
+        </div>
+        <%# The default value for response_seen is true, so set it to false when setting a response %>
+        <%= tm.hidden_field(:response_seen, value: false) %>
+        <div class="form-group">
+          <%= f.submit "Update ticket", id: 'submit', class: 'btn btn-primary' %>
+        </div>
+        </p>
+    <%end%>
+    <% @ticket.ticket_messages.each do |tm| %>
+        <% if tm.response != nil %>
+          <% cssclass = [] %>
+          <% if tm.response[/-----BEGIN/] %>
+          <%   cssclass.push 'encrypted' %>
+          <% else %>
+          <%   cssclass.push 'plaintext' %>
+          <% end %>
+          <div class="message sent <%= cssclass.join(' ') %>">
+<%= tm.response.split("\r\n").collect{ |line| h line}.join("<br>").html_safe  %>
+          </div>
+        <%end%>
+
+          <% if tm.message != nil %>
+          <% cssclass = [] %>
+          <% if tm.message[/-----BEGIN/] %>
+          <%   cssclass.push 'encrypted' %>
+          <% else %>
+          <%   cssclass.push 'plaintext' %>
+          <% end %>
+          <div class="message received <%= cssclass.join(' ') %>">
+<%= tm.message.split("\r\n").collect{ |line| h line}.join("<br>").html_safe  %>
+          </div>
+        <%end%>
+
+    <%end%>
+</div>
+</div>
+
+<% end %>

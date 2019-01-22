@@ -1,0 +1,222 @@
+<%= form_for([:vendor, @product] , :html => { class: 'form-horizontal', :multipart => true }) do |f| %>
+
+  <%= render partial: 'form_errors', locals: { what: @product } %>
+
+  <div class="form-group">
+    <%= f.label :title, 'Product title', class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :title, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :description, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-9">
+    <%= f.text_area :description, rows: 10, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :category_id, 'Category' , class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.collection_select(:category_id, Category.all, :id, :name, {}, class: 'form-control') %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :available_for_sale, 'Enabled', class: 'col-sm-2 control-label' %>
+    <div class="col-sm-8">
+    <%= f.check_box(:available_for_sale, class: 'checkbox') %>
+    <p class="help-block">Allows new sales to be enabled or disabled. Product will remain in listings either way.</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :hidden, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-8">
+    <%= f.check_box(:hidden, class: 'checkbox') %>
+    <p class="help-block">Hide product from product listings and searches.</p>
+    </div>
+  </div>
+
+  <% if current_user.fe_allowed %>
+    <div class="form-group">
+      <%= f.label :fe_enabled, 'No escrow', class: 'col-sm-2 control-label' %>
+      <div class="col-sm-8">
+        <%= f.check_box(:fe_enabled, class: 'checkbox') %>
+      <p class="help-block">
+        No escrow tag will show on product listing and buyer will be advised during order confirmation that no escrow will be held.
+        No escrow (finalize early) orders will be automatically finalized by the market upon vendor acceptance.
+      </p>
+      </div>
+    </div>
+  <%end%>
+
+  <div class="form-group space-below">
+    <%= f.label :image1, "Product image 1", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-9">
+    <%= image_tag @product.image1.url(:thumb), class: 'thumbnail', alt: 'product image1' %>
+    <%= f.file_field :image1 %>
+    <p class="help-block">
+      Max size 2MB per image (gif, jpeg, png). The server will strip exif but it is safer to remove exif yourself before upload.
+      Beware of sensor fingerprinting.
+      To avoid timeouts on the slow TOR network, it may be preferable to upload one image at a time.
+    </p>
+    <% if @product.image1_file_name %>
+      <div>
+        <%= check_box_tag('delete_image[]', 1, false, id: 'delete_image1') %> Delete image 1
+      </div>
+    <%end%>
+    </div>
+  </div>
+
+  <div class="form-group space-below">
+    <%= f.label :image2, "Product image 2", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-9">
+    <%= image_tag @product.image2.url(:thumb), class: 'thumbnail', alt: 'product image2' %>
+    <%= f.file_field :image2 %>
+    <% if @product.image2_file_name %>
+      <div>
+        <%= check_box_tag('delete_image[]', 2, false, id: 'delete_image2') %> Delete image 2
+      </div>
+    <%end%>
+    </div>
+  </div>
+
+  <div class="form-group space-below">
+    <%= f.label :image3, "Product image 3", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-9">
+    <%= image_tag @product.image3.url(:thumb), class: 'thumbnail', alt: 'product image3' %>
+    <%= f.file_field :image3 %>
+    <% if @product.image3_file_name %>
+      <div>
+        <%= check_box_tag('delete_image[]', 3, false, id: 'delete_image3') %> Delete image 3
+      </div>
+    <%end%>
+    </div>
+  </div>
+
+  <%# When product first created, make image1 the primary image automatically and don't provide a way to set primary image.
+      Changing the primary image is only necessary for existing products that have at least two images. %>
+  <% unless @product.new_record? %>
+
+    <% if @product.image_set_array.size > 1 %>
+      <div class="form-group">
+        <%= f.label :primary_image, "Primary image", class: 'col-sm-2 control-label' %>
+        <div class="col-sm-4">
+          <%# re-sort to numeric order because looks better. %>
+          <% @product.image_set_array.sort.each do |i| %>
+            <div class="radio">
+              <label>
+                 <%= f.radio_button(:primary_image, i) %>
+                 Image <%=i%>
+              </label>
+            </div>
+          <%end%>
+        <p class="help-block">Changes the display order of images.</p>
+        </div>
+      </div>
+    <%end%>
+
+  <%end%>
+
+  <div class="form-group">
+    <%= f.label :unitdesc, "Units", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :unitdesc, class: 'form-control' %>
+    <p class="help-block">unit description. ie mg, g, oz, ml, cookies.</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :stock, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :stock, class: 'form-control' %>
+    <p class="help-block">quantity of product available in specified units</p>
+    </div>
+  </div>
+
+  <%= f.fields_for :unitprices do |upform| %>
+    <div class="form-group">
+      <span class="col-sm-2 control-label"><strong>Unit price</strong></span>
+      <div class="col-sm-10 form-inline">
+        <div class="input-group">
+          <span class="input-group-addon">quantity</span>
+          <%= upform.text_field :unit, class: 'form-control input-sm' %>
+        </div>
+        <div class="input-group">
+          <span class="input-group-addon">$</span>
+          <%= upform.text_field :price, class: 'form-control input-sm' %>
+        </div>
+        <% unless @product.new_record? %>
+           <%= upform.check_box :_destroy %> Delete
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p class="help-block">
+        At least one unit price should be specified. Others may be left blank.
+        On submission, prices will be saved your preferred currency in account settings.
+      </p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :from_location_id, 'Ships from' , class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.collection_select(:from_location_id, Location.all, :id, :description, {}, class: 'form-control') %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <span class="col-sm-2 control-label"><strong>Ships to</strong></span>
+    <div class="col-sm-4">
+    <% Location.all.each do |loc| %>
+      <div class="checkbox">
+        <label>
+        <%= f.check_box(:location_ids,  { :multiple => true }, loc.id, nil) %> <%= loc.description %>
+        </label>
+      </div>
+    <% end %>
+    </div>
+  </div>
+
+  <%# multi-selects are ugly without javascript styling so use check boxes instead. Both these methods submit an array of shipping ids.
+      Rails automatically handles the join table when product saved. %>
+  <%# f.collection_select(:shippingoption_ids, @shippingoptions, :id, :description, {}, :multiple => true) %>
+  <div class="form-group">
+    <span class="col-sm-2 control-label"><strong>Shipping options</strong></span>
+    <div class="col-sm-4">
+    <% current_user.shippingoptions.each do |shipopt| %>
+      <div class="checkbox">
+        <label>
+        <%= f.check_box(:shippingoption_ids,  { :multiple => true }, shipopt.id, nil) %> <%= shipopt.description %>
+        </label>
+      </div>
+    <% end %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <span class="col-sm-2 control-label"><strong>Payment methods</strong></span>
+    <div class="col-sm-4">
+    <% PaymentMethod.all.each do |pm| %>
+      <div class="checkbox">
+        <label>
+        <%= f.check_box(:payment_method_ids,  { :multiple => true }, pm.id, nil) %> <%= pm.name %>
+        </label>
+      </div>
+    <% end %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4 form-button">
+    <%= f.submit class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+<% end %>

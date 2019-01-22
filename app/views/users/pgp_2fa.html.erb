@@ -1,0 +1,51 @@
+<h3>PGP Two factor auth</h3>
+
+<% if @gpg_msg != nil %>
+
+<p>To enable or disable PGP 2FA you will need to decrypt the message below and enter the decrypted word in the form.</p>
+
+<p>
+To copy, click text box and press
+<kbd>ctrl a</kbd>
+<kbd>ctrl c</kbd>
+</p>
+<p>
+<textarea readonly rows="12" class="form-control pgp-textarea">
+<%= @gpg_msg %>
+</textarea>
+</p>
+
+<%= form_for(@user, method: 'post', url: account_pgp_2fa_path, html: {class: 'form-horizontal'}) do |f| %>
+  <div class="form-group">
+    <span class="col-sm-2 control-label"><strong>Enable PGP 2FA</strong></span>
+      <div class="col-sm-7">
+        <div class="checkbox">
+          <label>
+          <%= f.check_box(:pgp_2fa) %>
+          </label>
+        </div>
+        <p class="help-block">
+          This will require you to decrypt a random word every time you login and also when changing account settings.
+        </p>
+      </div>
+  </div>
+
+  <div class="form-group">
+    <%= label_tag :secret_word, "Decrypted word", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-7">
+    <%= text_field_tag :secret_word, nil, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit "Submit", id: 'submit', class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+
+<%end%>
+
+
+
+<%end%>

@@ -1,0 +1,33 @@
+<h3>Locations</h3>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Product count (ship from)</th>
+      <th>Product count (ship to)</th>
+      <th colspan=1"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @locations.each do |loc| %>
+      <tr>
+        <td class="nowrap"><%= loc.description  %></td>
+        <td><%= Product.where(from_location: loc).count %></td>
+        <td><%= loc.products.count %></td>
+        <td class="nowrap">
+          <div>
+          <%# Put the edit link inside form just for formatting so they are one same line %>
+          <%= form_tag([:admin, loc],  method: :delete) do %>
+            <%= link_to 'Edit', edit_admin_location_path(loc), class: "btn btn-primary btn-sm" %>
+            <%= submit_tag("Delete", class: "btn btn-danger btn-sm") if loc.allow_destroy? %>
+          <% end %>
+          </div>
+        </td>
+      </tr>
+    <%end%>
+
+  </tbody>
+</table>
+<p><%= link_to 'Add location', new_admin_location_path, class: "btn btn-primary" %></p>

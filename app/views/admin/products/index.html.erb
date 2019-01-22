@@ -1,0 +1,51 @@
+<h3>Products</h3>
+
+<table class="table table-condensed">
+  <thead>
+    <tr>
+      <th>Created at</th>
+      <th>Vendor</th>
+      <th>Title</th>
+      <th>Category</th>
+      <th>Stock Quantity</th>
+      <th>Desc</th>
+      <th>Enabled</th>
+      <th>Hidden</th>
+      <th>Orders count</th>
+      <th>Payment methods</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @products.each do |product| %>
+      <tr>
+        <td class="nowrap"><%= product.created_at.in_time_zone(admin_user.timezone).to_s(:FHMnozone) %></td>
+        <td><%= link_to truncate(product.vendor.displayname, length:15), admin_profile_path(product.vendor) %></td>
+        <td><%= link_to product.title, product_path(product) %></td>
+        <td><%= truncate(product.category.name, length: 10) %></td>
+        <td><%= product.stock %></td>
+        <td><%= truncate(product.description, length: 15) %></td>
+        <td>
+          <% if product.available_for_sale %>
+            <%=image_tag('checkmark.svg')%>
+          <%end%>
+        </td>
+        <td>
+          <% if product.hidden %>
+            <%=image_tag('checkmark.svg')%>
+          <%end%>
+        </td>
+        <td><%= product.orders_count %></td>
+        <td>
+          <% product.payment_methods.each do |pm| %>
+            <%=image_tag("#{pm.name.downcase}.svg", class: "small_logo", width: "16", height: "16")%>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="10" class="align-right nowrap">Product count: <%=@products_count%></td></tr>
+  </tfoot>
+</table>
+<%= paginate @products %>

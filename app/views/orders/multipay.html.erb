@@ -1,0 +1,54 @@
+<h3>Multipay</h3>
+
+<%# @orders has at least 2 payment pending orders. All of them have same payment method. %>
+<p>
+This feature allows you to pay multiple orders using a single payment to one <%=@primary_order.payment_method.name%> address.
+This is an advanced feature because it requires you to pay the <b>exact amount</b> specified. If you are not confident in wallet operation to ensure the exact amount is paid,
+then avoid this feature and pay each order separately.
+</p>
+
+<p>
+Please pay <%=@total_to_pay%> <%=@primary_order.payment_method.code%> to <%=@primary_order.btc_address.address%>
+</p>
+<p>
+This is the address of your first (oldest) payment pending order.
+Once you have paid the amount specified, do not make additional payments to the other orders.
+When the payment has sufficient confirmations, all your orders shown here will change to paid.
+If you pay too much or pay less than specified, this feature will not work and only the first order will receive the payment.
+</p>
+
+<p>
+&nbsp;
+</p>
+
+<table class="table table-condensed">
+  <thead>
+    <tr>
+      <th>Create time</th>
+      <th>Product</th>
+      <th>Vendor</th>
+      <th class="align-right">Price (<%= current_user.currency %>)</th>
+      <th class="align-left">Pay Price</th>
+    </tr>
+  </thead>
+  <tbody>
+  <% @orders.each do |order| %>
+    <tr>
+      <td class="nowrap"><%= order.created_at.in_time_zone(current_user.timezone).to_s(:FHMnozone) %></td>
+      <td><%= order.title %></td>
+      <td><%= link_to truncate(order.vendor.displayname, length:15), profile_path(order.vendor) %></td>
+      <td class="nowrap align-right"><%= currency_format(order.total_price_in_currency(current_user.currency)) %> &nbsp;</td><%# Price ([in users currency]) %>
+      <td class="nowrap align-left"><%= order.btc_price %></td><%# Pay price %>
+    </tr>
+  <%end%>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="4" class="align-left nowrap">Total to pay:</td>
+      <td class="nowrap align-left">
+        <%=@total_to_pay%>
+        <%=image_tag("#{@primary_order.payment_method.name.downcase}.svg", class: "small_logo", width: "16", height: "16")%>
+      </td>
+    </tr>
+  </tfoot>
+</table>

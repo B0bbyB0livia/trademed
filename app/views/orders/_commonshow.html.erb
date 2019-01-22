@@ -1,0 +1,544 @@
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Product</strong>
+  </div>
+  <div class="col-md-9">
+    <%= link_to @order.title, "#order_description" %>
+  </div>
+</p>
+</div>
+
+<% if is_vendor? || is_admin? %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+        <strong>Customer</strong>
+    </div>
+    <div class="col-md-9">
+        <%= link_to @order.buyer.displayname, profile_path(@order.buyer) %>
+    </div>
+  </p>
+  </div>
+<%end%>
+
+<% if !is_vendor? || is_admin? %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+        <strong>Vendor</strong>
+    </div>
+    <div class="col-md-9">
+        <%= link_to @order.vendor.displayname, profile_path(@order.vendor) %>
+    </div>
+  </p>
+  </div>
+<%end%>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Order date</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @order.created_at.in_time_zone(session_user.timezone).to_s(:FHM) %>
+  </div>
+</p>
+</div>
+
+<% if is_admin? %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+      <strong>Updated at</strong>
+    </div>
+    <div class="col-md-9">
+      <%= @order.updated_at.in_time_zone(session_user.timezone).to_s(:FHM) %>
+    </div>
+  </p>
+  </div>
+<%end%>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Status</strong>
+  </div>
+  <div class="col-md-9">
+    <% labeltype = (@order.status == Order::EXPIRED) ? 'warning' : 'primary' %>
+    <span class="label label-<%=labeltype%>"><%= @order.status %></span>
+
+    <% if @order.status == Order::PAYMENT_PENDING && !@order.stock_available? %>
+      <p>
+        <span class="label label-warning">insufficient stock</span>
+      </p>
+    <%end%>
+
+    <%if @order.locked %>
+      <p>
+        <span class="label label-danger">locked</span>
+        <p class="help-block">A blockchain re-org has made the payment received invalid. The order cannot be modified until issue resolved by admin.</p>
+      </p>
+    <%end%>
+
+    <p class="help-block">
+    <% if @order.status == Order::PAYMENT_PENDING %>
+         Waiting for payment to the <%=@order.payment_method.name%> address. Status will automatically change when full payment received on blockchain.
+         Multiple payment transactions are summed towards total owing.
+         <% if @order.payment_received > 0  && @order.payment_received + @order.payment_unconfirmed < @order.btc_price %>
+           <%# Order is underpaid (since status still PAYMENT_PENDING) and
+               any additional payments made that are waiting for sufficient confirmations, are still inadequate to cover order price. %>
+           <p class="warn">
+           Requires another payment of <%= @order.btc_price - @order.payment_received %>
+           </p>
+         <%end%>
+    <% elsif @order.status == Order::PAID %>
+         Order is confirmed and waiting for vendor to accept.
+    <% elsif @order.status == Order::PAID_NO_STOCK %>
+         Stocks were reduced between when order created and payment received. Therefore this order cannot be fulfilled. Buyer must set refund address.
+    <% elsif @order.status == Order::ACCEPTED %>
+         Vendor has accepted order and will update status once shipped.
+    <% elsif @order.status == Order::REFUND_REQUESTED %>
+         Waiting for vendor to approve the refund percentage requested.
+    <% elsif @order.status == Order::SHIPPED %>
+         Waiting for buyer to finalize or request refund.
+    <% elsif @order.status == Order::FINALIZED %>
+         Funds will be paid to vendor.
+    <% elsif @order.status == Order::REFUND_FINALIZED %>
+         A percentage of funds will be paid to buyer with remaining going to vendor (less commission).
+    <% elsif @order.status == Order::DECLINED %>
+         Vendor unable to fulfil this order. Buyer must set refund address.
+    <% elsif @order.status == Order::ADMIN_FINALIZED %>
+         Admin has allocated the escrow to the parties.
+    <% elsif @order.status == Order::EXPIRED %>
+      <% if @order.payment_received == 0 %>
+         No payment was received and the order has expired.
+      <%elsif @order.payment_received < @order.btc_price %>
+         Insufficient payment was received and order expired.
+      <%else%>
+         <%# sufficient payment received so it must have been paid after expiry %>
+         Payment was received after the order expired.
+      <%end%>
+    <% end %>
+    </p>
+
+    <% if @order.admin_set_paid %>
+      <p class="help-block">Order set paid by the administrator.</p>
+    <% end %>
+
+  </div>
+</p>
+</div>
+
+<% if @order.fe_required %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+      <strong>Escrow</strong>
+    </div>
+    <div class="col-md-9">
+      No
+    </div>
+  </p>
+  </div>
+<%end%>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Unit price</strong>
+  </div>
+  <div class="col-md-9">
+    <%= "%g" % @order.unitprice.unit %> <%= @order.product.unitdesc %> /
+    <%= currency_format(@order.convertCurrency(@order.unitprice.currency, session_user.currency, @order.unitprice.price)) %> <%=session_user.currency%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Quantity</strong>
+  </div>
+  <div class="col-md-9">
+  <%= @order.quantity %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Total quantity</strong>
+  </div>
+  <div class="col-md-9">
+    <%= sprintf("%g", @order.quantity * @order.unitprice.unit) %> <%= @order.product.unitdesc %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Shipping option</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @order.shippingoption.description %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Shipping price</strong>
+  </div>
+  <div class="col-md-9">
+    <%= currency_format( @order.convertCurrency(@order.shippingoption.currency, session_user.currency, @order.shippingoption.price) ) %> <%= session_user.currency %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Total price</strong>
+  </div>
+  <div class="col-md-9">
+    <%= currency_format(@order.total_price_in_currency(session_user.currency)) %>  <%= session_user.currency %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>
+      <%=@order.payment_method.name%> price
+      <%=image_tag("#{@order.payment_method.name.downcase}.svg", class: "small_logo", width: "16", height: "16")%>
+    </strong>
+  </div>
+  <div class="col-md-9">
+    <%= @order.btc_price %>
+    ( @<%= currency_format(@order.get_exchange_rate(session_user.currency)) %> <%= session_user.currency %>/<%=@order.payment_method.code%> )
+  </div>
+</p>
+</div>
+
+<% if !is_vendor? || is_admin? %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+      <strong><%=@order.payment_method.name%> payment address</strong>
+    </div>
+    <div class="col-md-9">
+      <% if @order.status != Order::BEFORE_CONFIRMED %>
+        <%= @order.btc_address.address %>
+      <% else %>
+        address not yet assigned
+      <% end %>
+      <% if @order.status == Order::PAYMENT_PENDING %>
+        <p class="help-block">
+          Please pay <%=@order.btc_price%> <%=@order.payment_method.code%> to the above address before the expiry time
+            <%= (@order.created_at + Rails.configuration.expire_unpaid_order_duration).in_time_zone(session_user.timezone).to_s(:FHM) %>.
+        </p>
+        <p class="help-block">
+          After <%=Rails.configuration.blockchain_confirmations%> blockchain confirmations your order will be marked as paid.
+        </p>
+        <p class="help-block">
+          Overpayments are accepted but there is no provision for returning change.
+        </p>
+        <p class="help-block">
+          This order does not constitute a reservation of product stock until payment is confirmed.
+        </p>
+      <%end%>
+    </div>
+  </p>
+  </div>
+
+
+  <% if @order.status != Order::BEFORE_CONFIRMED %>
+    <div class="row">
+    <p>
+      <div class="col-md-3">
+        <strong>PGP signature of address</strong>
+      </div>
+      <div class="col-md-9">
+      <textarea readonly rows="5" class="form-control pgp-textarea">
+<%= @order.btc_address.pgp_signature %>
+      </textarea>
+      <p class="help-block">The <%=@order.payment_method.name%> payment address is always signed with this website's key which you should have saved.
+         You may verify the address with PGP to ensure it is authentic.</p>
+      </div>
+    </p>
+    </div>
+
+  <% end %>
+<%end%><%# is a buyer or an admin %>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong><%=@order.payment_method.name%> payment received</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @order.payment_received %>
+    <% if @order.payment_received == 0 && @order.multipay_group %>
+      <%# This will show on all orders that were set PAID/PAID_NO_STOCK by multipay job, excluding the primary order which actually received payment. %>
+      (paid using multipay)
+    <% elsif @order.multipay_group && @order.multipay_group.primary_order == @order %>
+      (primary multipay order)
+    <%end%>
+  </div>
+</p>
+</div>
+
+<%# Useful for vendor to see if they tried to pay yet. User might not understand block explorers so this helps them see payment registered. %>
+<% if @order.payment_received < @order.btc_price %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+      <strong>Unconfirmed payments</strong>
+    </div>
+    <div class="col-md-9">
+      <%= @order.payment_unconfirmed %> (less than <%=Rails.configuration.blockchain_confirmations%> confirmations)
+    </div>
+  </p>
+  </div>
+<% end %>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Shipped date</strong>
+  </div>
+  <div class="col-md-9">
+    <% if @order.dispatched_on == nil %>
+      not shipped yet or was finalized early before shipping
+    <%else%>
+      <%= @order.dispatched_on.in_time_zone(session_user.timezone).to_s(:FHM) %>
+    <%end%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <% if @order.status == Order::FINALIZED %>
+    <div class="col-md-3"><strong>Finalized date</strong></div>
+    <div class="col-md-9"><%= @order.finalized_at.in_time_zone(session_user.timezone).to_s(:FHM) %></div>
+  <%else%>
+    <div class="col-md-3"><strong>Autofinalize date</strong></div>
+    <div class="col-md-9">
+      <% if @order.fe_required %>
+        n/a
+      <% elsif @order.finalize_at.nil? %>
+        only applicable when order marked shipped
+      <% else %>
+        <%= @order.finalize_at.in_time_zone(session_user.timezone).to_s(:FHM) %>
+      <%end%>
+    </div>
+  <%end%>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Postage details</strong>
+  </div>
+  <div class="col-md-9">
+    <textarea readonly rows="5" class="form-control pgp-textarea">
+<%= @order.address.empty? ? 'No address specified when order created, or address has been deleted after order completed to increase privacy.' : @order.address %>
+    </textarea>
+  </div>
+</p>
+</div>
+
+<% if @order.status == Order::DECLINED %>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Decline reason</strong></div>
+    <div class="col-md-9"><%= @order.declined_reason %></div>
+   </p>
+  </div>
+<%end%>
+
+<% if @order.status == Order::REFUND_REQUESTED %>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Requested refund</strong></div>
+    <div class="col-md-9"><%= number_to_percentage(@order.refund_requested_fraction * 100, precision: 0) %></div>
+   </p>
+  </div>
+<%end%>
+
+<% if @order.status == Order::REFUND_FINALIZED %>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Refund proportion</strong></div>
+    <div class="col-md-9"><%= number_to_percentage(@order.refund_requested_fraction * 100, precision: 0) %></div>
+   </p>
+  </div>
+<%end%>
+
+<% if @order.status == Order::ADMIN_FINALIZED %>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Refund proportion</strong></div>
+    <div class="col-md-9"><%= number_to_percentage(@order.admin_finalized_refund_fraction * 100, precision: 0) %></div>
+   </p>
+  </div>
+<%end%>
+
+<% if (is_admin? || !is_vendor?) && @order.buyer_payout && @order.buyer_payout.btc_amount > 0 %>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Refund amount</strong></div>
+    <div class="col-md-9"><%= @order.buyer_payout.btc_amount %> <%=@order.payment_method.code%></div>
+   </p>
+  </div>
+
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Pay refund to <%=@order.payment_method.code%> address</strong></div>
+    <div class="col-md-9">
+      <%= @order.buyer_payout.btc_address.nil? ? 'none set' : @order.buyer_payout.btc_address %>
+      <%# the admin view should not allow setting or modifying the payout address. %>
+      <% if !@order.buyer_payout.paid && !is_admin? %>
+        <%= link_to 'Set address', '#payout', class: 'btn btn-primary btn-xs' %>
+      <%end%>
+    </div>
+   </p>
+  </div>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Buyer refund processed</strong></div>
+    <div class="col-md-9"><%= @order.buyer_payout.paid ? 'yes' : 'no' %></div>
+   </p>
+  </div>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Refund txid</strong></div>
+    <div class="col-md-9"><%= @order.buyer_payout.try(:txid) %></div>
+   </p>
+  </div>
+<% end %>
+
+<% if (is_admin? || is_vendor?) && @order.vendor_payout %>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Pay vendor amount</strong></div>
+    <div class="col-md-9"><%= @order.vendor_payout.btc_amount %> <%=@order.payment_method.code%></div>
+   </p>
+  </div>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Pay <%=@order.payment_method.name%> address</strong></div>
+    <div class="col-md-9">
+      <%= @order.vendor_payout.btc_address.nil? ? 'none set' : @order.vendor_payout.btc_address %>
+      <%# the admin view should not show the controls for setting or modifying the payout address since admin controller doesn't support that. %>
+      <% if !@order.vendor_payout.paid && !is_admin? %>
+        <%= link_to 'Set address', '#payout', class: 'btn btn-primary btn-xs' %>
+      <%end%>
+    </div>
+   </p>
+  </div>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Commission</strong></div>
+    <div class="col-md-9"><%= @order.commission %> <%=@order.payment_method.code%></div>
+   </p>
+  </div>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Vendor payment processed</strong></div>
+    <div class="col-md-9"><%= @order.vendor_payout.paid ? 'yes' : 'no' %></div>
+   </p>
+  </div>
+  <div class="row">
+   <p>
+    <div class="col-md-3"><strong>Vendor payment txid</strong></div>
+    <div class="col-md-9"><%= @order.vendor_payout.try(:txid) %></div>
+   </p>
+  </div>
+<% end %>
+
+<%# Admin will not see this section on feedback. It will only show for vendors & buyers. %>
+<% if @order.allow_feedback_submission? %>
+  <p>
+  <% if feedback_placed = @order.feedbacks.find_by(placedby: session_user) %><%# use find_by so it returns a feedback or nil. %>
+  <%# Vendor sees after they leave feedback on buyer. Buyer sees this once they leave feedback. %>
+    <div class="row">
+    <p>
+      <div class="col-md-3">
+        <strong>Feedback placed</strong>
+      </div>
+      <div class="col-md-9">
+        <%= feedback_placed.feedback %>
+        <%= link_to 'Edit', edit_feedback_path(feedback_placed), class: "btn btn-primary btn-xs" %>
+      </div>
+    </p>
+    </div>
+    <% unless feedback_placed.response.empty? %>
+      <div class="row">
+      <p>
+        <div class="col-md-3">
+          <strong>Response</strong>
+        </div>
+        <div class="col-md-9">
+          <%= feedback_placed.response %>
+        </div>
+      </p>
+      </div>
+    <% end %>
+  <% end %>
+  </p>
+
+  <p>
+  <% if feedback_received = @order.feedbacks.find_by(placedon: session_user) %>
+  <%# Vendor sees this when buyer leaves feedback. Buyer sees this when vendor has left feedback. %>
+    <div class="row">
+    <p>
+      <div class="col-md-3">
+        <strong>Feedback received</strong>
+      </div>
+      <div class="col-md-9">
+        <%= feedback_received.feedback %>
+        <% if feedback_received.response.empty? %>
+          <%= link_to 'Respond', respond_feedback_path(feedback_received), class: "btn btn-primary btn-xs" %>
+        <%end%>
+      </div>
+    </p>
+    </div>
+    <% unless feedback_received.response.empty? %>
+      <div class="row">
+      <p>
+        <div class="col-md-3">
+          <strong>Response</strong>
+        </div>
+        <div class="col-md-9">
+          <%= feedback_received.response %>
+          <%= link_to 'Edit', respond_feedback_path(feedback_received), class: "btn btn-primary btn-xs" %>
+        </div>
+      </p>
+      </div>
+    <% end %>
+  <% end %>
+  </p>
+<% end %>
+
+<%# Modal dialog shows original product description saved when order created. %>
+<div id="order_description" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Order description</h3>
+   <p><%=link_to 'Product', @order.product %> description when order created:</p>
+   <small><%= simple_format h(@order.description) %></small>
+
+   <p>
+   <%= link_to 'Close', '#close', class: 'btn btn-default form-button' %>
+   </p>
+ </div>
+</div>

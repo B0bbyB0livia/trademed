@@ -1,0 +1,63 @@
+<h3>Messages</h3>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th><%= current_user.vendor ? "Buyer name" : "Vendor name" %></th>
+      <th>New messages</th>
+      <th>Message count</th>
+      <th>Last sent/received</th>
+      <th>Recipient seen</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @conversations.each do |conversation| %>
+      <tr>
+        <td><%= link_to conversation.otherparty.displayname, profile_path(conversation.otherparty) %></td>
+        <td>
+            <% if conversation.unseen_cnt > 0 %>
+              <%= link_to "#{conversation.unseen_cnt} new", show_conversation_path(conversation.otherparty), class: 'btn btn-success' %>
+            <%else%>
+              <%= conversation.unseen_cnt %>
+            <%end%>
+        </td>
+        <td><%= conversation.cnt %></td>
+        <td><%= conversation.newest_message_date.in_time_zone(current_user.timezone).strftime('%F') %></td>
+        <%# unseen is only set on 'received' message refs (see controller create method).
+            It would be more efficient to use a single query in controller rather than in this loop but there shouldn't be huge numbers of conversations (Todo).%>
+        <td><%if conversation.sent_anything == false %>
+              n/a
+            <%else%>
+              <%=image_tag('checkmark.svg') unless MessageRef.where(user: conversation.otherparty, otherparty: current_user, direction: 'received', unseen: 1).count > 0 %>
+            <%end%>
+        </td>
+        <td>
+          <%= link_to 'View', show_conversation_path(conversation.otherparty), class: 'btn btn-primary' %>
+          <%= link_to 'Delete', "#delete_#{conversation.otherparty.id}", class: 'btn btn-danger' %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<p class="help-block">
+To send a message, visit the user's profile and click the <em>send message</em> link.
+</p>
+
+<% @conversations.each do |conversation| %>
+  <div id="delete_<%=conversation.otherparty.id%>" class="modalDialog" hidden>
+    <div>
+     <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+     <h3>Confirm Delete</h3>
+     <p>Delete all messages to and from <%=conversation.otherparty.displayname%> ?</p>
+     <p>
+       <%= form_tag(delete_conversation_path(conversation.otherparty),  method: :delete) do %>
+         <%= submit_tag("Delete", class: 'btn btn-danger') %>
+         <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+     <% end %>
+     </p>
+   </div>
+  </div>
+<% end %>

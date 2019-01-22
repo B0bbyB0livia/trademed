@@ -1,0 +1,17 @@
+<table class="table-condensed">
+<tr><th>Shipping option</th><th>Price</th></tr>
+<% product.shippingoptions.each do |shipopt| %>
+  <tr>
+    <td><%= shipopt.description %></td>
+    <td class="align-right nowrap">
+        <% if current_user %>
+          <%= to_users_currency(shipopt.currency, shipopt.price) %> <%= current_user.currency %>
+        <%else%>
+          <%# just display in whatever currency it was saved as %>
+          <%= currency_format(shipopt.price) %> <%=shipopt.currency%>
+        <% end %>
+    </td>
+
+  </tr>
+<%end%>
+</table>

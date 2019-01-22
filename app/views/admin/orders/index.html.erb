@@ -1,0 +1,90 @@
+<h3>Orders</h3>
+
+<p class="pull-right">
+  <% if @pending_payouts %>
+    <%= link_to 'Show all', admin_orders_path, class: 'btn btn-primary btn-xs' %>
+  <%else%>
+    <%= link_to 'Show pending payouts', admin_orders_path(filter: :pending_payouts), class: 'btn btn-primary btn-xs' %>
+  <%end%>
+</p>
+
+<table class="table table-condensed">
+  <thead>
+    <tr>
+      <th>Order date</th>
+      <th>Product</th>
+      <th>Vendor</th>
+      <th>Buyer</th>
+      <th>Status</th>
+      <th>Total quantity</th>
+      <th>Price (<%= admin_user.currency %>)</th>
+      <th>Pay Price</th>
+      <th>Vendor payout</th>
+      <th>Buyer payout</th>
+      <th colspan="1"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @orders.each do |order| %>
+      <tr>
+        <td class="nowrap"><%= order.created_at.in_time_zone(admin_user.timezone).strftime('%F') %></td>
+        <td>
+          <%= order.title %>
+        </td>
+        <td><%= link_to truncate(order.vendor.displayname, length:15), admin_profile_path(order.vendor) %></td>
+        <td><%= link_to truncate(order.buyer.displayname, length:15), admin_profile_path(order.buyer) %></td>
+        <td>
+          <% labeltype = (order.status == Order::EXPIRED) ? 'warning' : 'primary' %>
+          <span class="label label-<%=labeltype%>"><%= order.status %></span>
+          <%if order.locked %>
+            <span class="label label-danger">locked</span>
+          <%end%>
+          <% if order.status == Order::PAYMENT_PENDING && !order.stock_available? %>
+            <p><span class="label label-warning">insufficient stock</span></p>
+          <%end%>
+          <% if order.status == Order::SHIPPED %>
+            <p class="small"><%= order.dispatched_on.in_time_zone(admin_user.timezone).strftime('%F') %></p>
+          <%end%>
+        </td>
+        <td><%= order.total_quantity %> <%=order.product.unitdesc%></td>
+        <td class="nowrap align-right"><%= currency_format(order.total_price_in_currency(admin_user.currency)) %> &nbsp;</td>
+        <td class="nowrap align-right"><%= order.btc_price %> <%=image_tag("#{order.payment_method.name.downcase}.svg", class: "small_logo", width: "16", height: "16")%></td>
+        <td>
+          <% if order.vendor_payout %>
+            <% if order.vendor_payout.paid %>
+              paid
+            <%elsif order.vendor_payout.btc_address %>
+              pending
+            <%else%>
+              no address set
+            <%end%>
+          <%else%>
+            n/a
+          <%end%>
+        </td>
+        <td>
+          <% if order.buyer_payout %>
+            <% if order.buyer_payout.paid %>
+              paid
+            <%elsif order.buyer_payout.btc_address %>
+              pending
+            <%elsif order.buyer_payout.btc_amount > 0 %>
+            <%# logic slightly different for buyer_payout because buyer_payout can exist when nothing to pay %>
+              no address set
+            <%else%>
+              n/a
+            <%end%>
+          <%else%>
+            n/a
+          <%end%>
+        </td>
+        <td><%= link_to 'Details', admin_order_path(order), class: "btn btn-primary btn-sm" %></td>
+      </tr>
+    <% end %>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="10" class="align-right nowrap">Order count: <%=@orders_count%></td></tr>
+  </tfoot>
+</table>
+<%= paginate @orders %>

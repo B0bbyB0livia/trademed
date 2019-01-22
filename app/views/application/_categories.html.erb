@@ -1,0 +1,15 @@
+<div class="panel panel-default">
+  <div class="panel-heading">Browse categories</div>
+  <div class="panel-body">
+     <% categories = Product.listable.joins(:category).select("categories.id, name, count(products.id) as product_count").group("categories.id, name").order("name") %>
+
+     <ul class="nav nav-pills nav-stacked">
+       <li> <a href="<%=products_path()%>">   All products   <span class="badge"><%=Product.listable.count%></span></a></li>
+      <% categories.each do |cat| %>
+        <%# annoying bootstrap wants the badge within the anchor tag. %>
+       <li> <a href="<%=products_path(category_id: cat.id)%>">   <%=cat.name%>   <span class="badge"><%=cat.product_count%></span></a></li>
+      <% end %>
+     </ul>
+  </div>
+
+</div>

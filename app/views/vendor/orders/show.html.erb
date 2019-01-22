@@ -1,0 +1,148 @@
+<%= render partial: 'form_errors', locals: { what: @order } %>
+
+<h3>Order #<%= @order.id %></h3>
+
+<%= render 'orders/commonshow' %>
+
+<% if @order.status == Order::PAID %>
+  <%# This should be a POST to avoid CSRF, even though GET would suffice because nothing in POST body. order id determined by controller using url. %>
+  <p>
+  <%= form_for([:vendor, @order], method: 'post', url: { action: 'accept' }) do |f| %>
+    <div class="actions">
+      <%= f.submit 'Accept order', class: 'btn btn-primary form-button' %>
+    </div>
+  <% end %>
+  </p>
+  <p><%= link_to 'Decline order', '#decline', class: 'btn btn-warning' %></p>
+
+<% elsif @order.status == Order::ACCEPTED || (@order.status == Order::FINALIZED && @order.dispatched_on == nil) %>
+  <%= form_for([:vendor, @order], method: 'post', url: { action: 'ship' }) do |f| %>
+    <div class="actions">
+      <%= f.submit 'Shipped', class: 'btn btn-primary form-button' %>
+    </div>
+  <% end %>
+  <% if @order.status == Order::FINALIZED %>
+    <p class="help-block">Shipped button will set shipped date to current time.</p>
+  <% end %>
+
+<% elsif @order.status == Order::REFUND_REQUESTED %>
+  <%= form_for([:vendor, @order], method: 'post', url: { action: 'finalize_refund' }) do |f| %>
+    <div class="actions">
+      <%= f.submit 'Approve refund', class: 'btn btn-primary form-button' %>
+    </div>
+  <% end %>
+<% end %>
+
+<% if @order.allow_feedback_submission? && @order.feedbacks.find_by(placedby: current_user).nil? %><%# use find_by so it returns a feedback or nil. %>
+  <%= link_to 'Submit feedback', new_feedback_path(order: @order.id), class: 'btn btn-primary form-button' %>
+<%end%>
+
+<% if !@order.archived_by_vendor && @order.allow_archive? %>
+  <%= link_to 'Archive', '#confirm_archive', class: 'btn btn-info form-button' %>
+<% end %>
+
+<% if @order.archived_by_vendor %>
+  <%= link_to 'Unarchive', '#confirm_unarchive', class: 'btn btn-info form-button' %>
+<% end %>
+
+<% if @order.allow_delete? %>
+  <%= link_to 'Delete', '#confirm_delete', class: 'btn btn-danger form-button' %>
+<% end %>
+
+<div id="decline" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Decline order</h3>
+   <%= form_for([:vendor, @order], method: 'post', url: { action: 'decline' }) do |f| %>
+     <div class="form-group">
+       <p>
+       <%= f.label :declined_reason, 'Reason for declining' %>
+       <%= f.text_field :declined_reason, class: 'form-control' %>
+       </p>
+       <p>
+       <%= f.submit 'Decline order', class: 'btn btn-warning' %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+       </p>
+     </div>
+   <% end %>
+ </div>
+</div>
+
+<div id="confirm_archive" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Archive</h3>
+   <p>
+     Archived orders will no longer show on the default orders list.
+     It is possible to unarchive them to bring them back to default orders list.
+   </p>
+   <p>
+     <%= form_for([:vendor, @order],  method: 'post', url: { action: 'archive' }) do |f| %>
+     <div class="form-group">
+       <p>
+       <%= f.submit 'Archive', class: 'btn btn-primary' %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+       </p>
+     </div>
+     <% end %>
+   </p>
+ </div>
+</div>
+
+<div id="confirm_unarchive" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Unarchive</h3>
+   <p>
+     This will make order display on the default orders list.
+   </p>
+   <p>
+     <%= form_for([:vendor, @order],  method: 'post', url: { action: 'unarchive' }) do |f| %>
+     <div class="form-group">
+       <p>
+       <%= f.submit 'Unarchive', class: 'btn btn-primary' %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+       </p>
+     </div>
+     <% end %>
+   </p>
+ </div>
+</div>
+
+<div id="confirm_delete" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Delete</h3>
+   <p>
+     <%= form_tag([:vendor, @order],  method: :delete) do %>
+       <%= submit_tag("Delete", class: 'btn btn-danger') %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+   <% end %>
+   </p>
+ </div>
+</div>
+
+<div id="payout" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Set payout address</h3>
+   <p>
+   Enter the <%=@order.payment_method.name%> address to receive payment for this order.
+   </p>
+     <%= form_for([:vendor, @order], method: 'post', url: vendor_payout_address_order_path(@order)) do |f| %>
+       <div class="form-group">
+       <%= f.label :payout_address, "#{@order.payment_method.name} address", class: 'control-label' %>
+       <%= f.text_field :payout_address, class: 'form-control' %>
+       </div>
+       <p>
+       <%= f.submit 'Submit', class: 'btn btn-primary' %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+       </p>
+     <%end%>
+ </div>
+</div>

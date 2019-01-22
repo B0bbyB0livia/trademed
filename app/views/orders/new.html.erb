@@ -1,0 +1,87 @@
+<%= render partial: 'form_errors', locals: { what: @order } %>
+<h3>New order</h3>
+
+<p>
+Select a price option, quantity and shipping option.
+</p>
+<p>
+The next step will summarize the total cost of the order and allow you to review before confirming.
+</p>
+
+<%= form_for(@order, :html => { class: 'form-horizontal' } ) do |f| %>
+
+  <div class="form-group">
+    <label class="col-sm-2 control-label">Product</label>
+    <div class="col-sm-10">
+      <p class="form-control-static"><%= @order.product.title%></p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="col-sm-2 control-label">Stock available</label>
+    <div class="col-sm-10">
+      <p class="form-control-static">
+      <%= sprintf("%g", @order.product.stock) %> <%= @order.product.unitdesc %>
+      </p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <span class="col-sm-2 control-label"><strong>Price option</strong></span>
+    <div class="col-sm-10">
+      <% @order.product.unitprices.each do |unitprice| %>
+        <div class="radio">
+         <label>
+           <%= f.radio_button(:unitprice_id, unitprice.id) %>
+           <%=unitprice_label(unitprice)%>
+         </label>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :quantity, class: 'col-sm-2 control-label'%>
+    <div class="col-sm-2">
+    <%= f.number_field :quantity, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <span class="col-sm-2 control-label"><strong>Shipping option</strong></span>
+    <div class="col-sm-10">
+      <% @order.product.shippingoptions.each do |shippingoption| %>
+        <div class="radio">
+         <label>
+           <%= f.radio_button(:shippingoption_id, shippingoption.id) %>
+           <%=shippingoption.description%> - <%=to_users_currency(shippingoption.currency, shippingoption.price)%> <%=current_user.currency%>
+         </label>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <span class="col-sm-2 control-label"><strong>Pay with</strong></span>
+    <div class="col-sm-10">
+      <% @order.product.payment_methods.each do |pm| %>
+        <div class="radio">
+         <label>
+           <%= f.radio_button(:payment_method_id, pm.id, checked: pm.is_bitcoin?, disabled: !pm.enabled )%>
+           <%=image_tag("#{pm.name.downcase}.svg", class: "small_logo", width: "16", height: "16")%>
+           <%=pm.name%>
+         </label>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+ <%= f.hidden_field :product_id %>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit 'Next', class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+<% end %>

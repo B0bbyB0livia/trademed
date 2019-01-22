@@ -1,0 +1,137 @@
+<%= render partial: 'form_errors', locals: { what: @order } %>
+
+<h3>Confirm order</h3>
+
+<p>After confirming you will be provided with a <%=@order.payment_method.name %> address to make payment.</p>
+<p>Please ensure your payment is confirmed on blockchain before Order Expiry time.</p>
+<%# Put this note in otherwise it can be confusing to see prices don't add up correctly. %>
+<p>Currency values are rounded to nearest cent.</p>
+
+<% if @order.fe_required %>
+  <p>
+  <b>The vendor has disabled escrow on this product</b>. This order will automatically finalize upon vendor acceptance.
+  Any shipping problems or disputes will have to be resolved directly with the vendor and the market cannot mediate conditions of sale.
+  </p>
+<%end%>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Product</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @order.title %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Vendor</strong>
+  </div>
+  <div class="col-md-9">
+    <%= link_to @order.vendor.displayname, profile_path(@order.vendor) %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Order expiry</strong>
+  </div>
+  <div class="col-md-9">
+    <%= (@order.created_at + Rails.configuration.expire_unpaid_order_duration).in_time_zone(current_user.timezone).to_s(:FHM) %>
+  </div>
+</p>
+</div>
+
+<p>
+<table class="table">
+<thead>
+  <tr><th></th><th>Unit</th><th>Price <%= current_user.currency %></th></tr>
+</thead>
+<tbody>
+  <tr>
+    <th scope="row">Quantity (x <%= @order.quantity %>)</th>
+    <td><%= "%g" % @order.unitprice.unit %> <%= @order.product.unitdesc %></td>
+    <td>
+        <%= currency_format(@order.convertCurrency(@order.unitprice.currency, session_user.currency, @order.unitprice.price), precision=2) %>
+    </td>
+  </tr>
+  <tr>
+    <th scope="row">Total</th>
+    <td><%= @order.quantity * @order.unitprice.unit %> <%= @order.product.unitdesc %></td>
+    <td>
+        <%= currency_format(@order.convertCurrency(@order.unitprice.currency, session_user.currency, @order.unitprice.price * @order.quantity), precision=2) %>
+    </td>
+  </tr>
+</tbody>
+</table>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Shipping option</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @order.shippingoption.description %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Shipping price</strong>
+  </div>
+  <div class="col-md-9">
+    <%= currency_format(@order.convertCurrency(@order.shippingoption.currency, current_user.currency, @order.shippingoption.price), precision=2) %> <%= current_user.currency %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Total price</strong>
+  </div>
+  <div class="col-md-9">
+    <%= currency_format(@order.total_price_in_currency(current_user.currency), precision=2) %>  <%= current_user.currency %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong><%=@order.payment_method.name %> price</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @order.btc_price %> ( @<%= currency_format(@order.get_exchange_rate(current_user.currency)) %> <%= current_user.currency %>/<%=@order.payment_method.code %> )
+  </div>
+</p>
+</div>
+</p>
+
+<p>
+<strong>Vendors public key:</strong>
+to copy, click text box and press 
+<kbd>ctrl a</kbd>
+<kbd>ctrl c</kbd>
+<textarea readonly rows="5" class="form-control pgp-textarea">
+<%=@order.vendor.publickey %>
+</textarea>
+</p>
+
+<%= form_for(@order, method: 'patch', url: { action: 'confirm' }) do |f| %>
+
+  <div class="form-group">
+    <%= f.label :address, 'Postage details (encrypt with vendors PGP key)' %>
+    <%= f.text_area :address, rows: 5, class: 'form-control' %>
+  </div>
+
+  <%= f.submit 'Confirm order', class: 'btn btn-primary' %>
+  <%= link_to 'Back', new_order_path(product: @order.product_id), class: 'btn btn-default' %>
+<% end %>

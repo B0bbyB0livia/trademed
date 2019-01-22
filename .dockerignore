@@ -1,0 +1,11 @@
+log/*log
+tmp/*
+Dockerfile
+.gitignore
+.dockerignore
+public/assets/*
+public/system/*
+*.swp
+.git
+spec/*
+test/*

@@ -1,0 +1,43 @@
+<table class="productindex">
+<% @products.each do |product| %>
+
+  <tr class="product">
+    <td class="align-top">
+       <% primary_image = product.image_set_array.first %>
+       <% primary_image = 1 if primary_image.nil? %>
+       <%# Displays a placeholder if no images are defined. %>
+       <%= link_to image_tag(product.method("image#{primary_image}").call.url(:thumb), alt: 'product picture'), product %>
+    </td>
+    <td class="align-top details">
+      <h4 class="media-heading"><%= link_to product.title, product %></h4>
+      <h5>Vendor: <%= link_to product.vendor.displayname, profile_path(product.vendor) %> <% concat("[on vacation]") if product.vendor.vacation %></h5>
+      <%# Long strings like URLs in description will overflow outside their container, messing up formatting.
+        # Normally this is an easy css fix but Firefox makes it difficult inside tables (read css file for more info).
+        # Browsers seem to automatically break long strings on "-_" chars but if none present the string will overflow container.
+        # Here it looks for long 60 char strings and wraps them in a div to apply word-breaking css.
+        # The pattern needs to avoid matching any strings with html tags because it will break the html,
+        # ie "<p>xxxxxxxxxxxxxxxxxx yyyyyyy</p>" would break p tag html if first non-whitespace string wrapped in div tags.
+        #%>
+      <% html = simple_format h( truncate(product.description, length: 400, separator: ' ') ) %>
+      <% html.gsub!(/([^<>\-_\s]{60,})/, '<div class="word_break">\\1</div>') %>
+      <%# rails automatically escapes html so this function will prevent escaping. It is already safe from calling h() above. %>
+      <%=html.html_safe %>
+
+      <% if product.fe_enabled %>
+        <h5 class="escrow">Escrow: No</h5>
+      <%end%>
+
+      <% if product.allow_purchase? %>
+        <a href="<%= product_path(product) %>"><button type="button" class="btn btn-light">Product details</button></a>
+      <%else%>
+        <a href="<%= product_path(product) %>"><button type="button" class="btn btn-warning">Not available for sale</button></a>
+      <%end%>
+    </td>
+    <td class="align-top nowrap">
+      <%= render partial: 'products/unitprices', locals: {product: product, show_price_per_unit: false} %>
+    </td>
+  </tr>
+
+<% end %>
+</table>
+<%= paginate @products %>

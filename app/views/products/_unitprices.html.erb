@@ -1,0 +1,37 @@
+<table class="table-condensed align-right unitprices">
+<% product.unitprices.each do |unitprice| %>
+ <tr>
+  <td><%= sprintf("%g", unitprice.unit) %> <%= product.unitdesc %></td>
+  <td>
+        <% if current_user %>
+          <%= to_users_currency(unitprice.currency, unitprice.price) %> <%= current_user.currency %>
+        <%else%>
+          <%# just display in whatever currency it was saved as %>
+          <%= currency_format(unitprice.price) %> <%=unitprice.currency%>
+        <% end %>
+  </td>
+  <%if show_price_per_unit%>
+   <%# price per unit calculation.
+       The precision setting will automatically round. So 100g/$1.60 has ppu 0.02 $/g.
+       If ppu below 1c then don't bother displaying because it will be zero. %>
+    <td>
+       <% if current_user %>
+         <% ppu = to_users_currency(unitprice.currency, unitprice.price / unitprice.unit, precision=2) %>
+         <% unless ppu == "0.00" %>
+           <%= ppu %>
+           <%=current_user.currency%>
+           / <%=unitprice.product.unitdesc %>
+         <%end%>
+       <%else%>
+         <% ppu = number_to_currency(unitprice.price / unitprice.unit, precision: 2, unit: "") %>
+         <% unless ppu == "0.00" %>
+           <%= ppu %>
+           <%=unitprice.currency%>
+           / <%=unitprice.product.unitdesc %>
+         <%end%>
+       <%end%>
+    </td>
+  <%end%>
+ </tr>
+<%end%>
+</table>

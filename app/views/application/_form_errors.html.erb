@@ -1,0 +1,7 @@
+<div id="form_errors">
+  <% if what.errors.any? %>
+    <% what.errors.full_messages.each do |msg| %>
+      <%= content_tag :div, msg, :class => "alert alert-danger"  %>
+    <% end %>
+  <% end %>
+</div>

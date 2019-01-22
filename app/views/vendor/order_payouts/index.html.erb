@@ -1,0 +1,15 @@
+<h3>Payment history</h3>
+
+<h4>Bitcoin payments processed</h4>
+<%= render partial: 'table', locals: { order_payouts: @btc_order_payouts, summary: @btc_summary, currency: 'BTC' } %>
+
+<% if PaymentMethod.litecoin_exists? %>
+  <h4>Litecoin payments processed</h4>
+  <%= render partial: 'table', locals: { order_payouts: @ltc_order_payouts, summary: @ltc_summary, currency: 'LTC' } %>
+<%end%>
+<p>
+Click order id to get more details of the truncated btc address and txid. If order has been deleted then it will not show here.
+</p>
+<p>
+Total sales revenue: <%= currency_format(@revenue) %> <%= session_user.currency %>
+</p>

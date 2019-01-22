@@ -1,0 +1,141 @@
+<h3><%= @user.username %></h3>
+
+<%= render partial: 'form_errors', locals: { what: @user } %>
+
+<p>
+<%= link_to "View profile", admin_profile_path(@user) %>
+</p>
+<p>
+<%= link_to "Send new support ticket", admin_new_ticket_path(user_id: @user.id) %>
+</p>
+<p>
+<%= link_to "View conversations", admin_conversations_path(@user) %>
+</p>
+<% if @user.is_vendor? %>
+  <p>
+    <%= link_to "Products (#{@user.products.count})", admin_products_path(filter_vendor: @user.displayname) %>
+  </p>
+  <p>
+  Total sales revenue: <%= currency_format(@revenue) %> <%= admin_user.currency %>
+  </p>
+<%end%>
+
+<h4>Settings</h4>
+
+<dl class="dl-horizontal">
+  <dt>Payout schedule</dt>
+  <dd>
+    <%= @user.payout_schedule %>
+    <%= @user.payout_schedule.collect{|s| Date::DAYNAMES[s]}.join(',') %>
+  </dd>
+  <dt>PGP 2FA</dt>
+  <dd>
+    <%= @user.pgp_2fa %>
+  </dd>
+  <dt>Vacation</dt>
+  <dd>
+    <%= @user.vacation %>
+  </dd>
+  <dt>BTC address</dt>
+  <dd>
+    <%= @user.payout_btc_address.nil? ? 'not set' : @user.payout_btc_address %>
+  </dd>
+  <dt>LTC address</dt>
+  <dd>
+    <%= @user.payout_ltc_address.nil? ? 'not set' : @user.payout_ltc_address %>
+  </dd>
+</dl>
+
+
+
+<h4>Set new password</h4>
+<%= form_for([:admin, @user], method: 'patch', url: admin_user_path(@user), html: { class: 'form-horizontal' }) do |f| %>
+  <div class="form-group">
+    <%= f.label :password, "New password", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.password_field :password, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :password_confirmation, "Confirm password", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.password_field :password_confirmation, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit "Change passsword", id: 'submit', class: 'btn btn-default' %>
+  </div>
+  </div>
+<%end%>
+
+<h4>Vendor enable</h4>
+<%= form_for([:admin, @user], method: 'patch', url: admin_user_path(@user), html: { class: 'form-horizontal' }) do |f| %>
+
+  <div class="form-group">
+  <%= f.label :vendor, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= f.check_box(:vendor, class: 'checkbox') %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit 'Submit', class: 'btn btn-default' %>
+  </div>
+  </div>
+<%end%>
+
+<h4>Account access</h4>
+<p>
+Disabled means the authenticated user's requests to pages that require authentication will not work but their session remains valid.
+They will see an error message on every request. Even logging out will not be possible. This is a way to deal with a problem user or browser and
+could be implemented programatically (App sensor).
+</p>
+<p>
+However, if current time is past disabled_until, then the disabled setting has no effect. This allows restoring access without making a database update.
+</p>
+<%= form_for([:admin, @user], method: 'patch', url: admin_user_path(@user), html: { class: 'form-horizontal' }) do |f| %>
+
+  <div class="form-group">
+  <%= f.label :disabled, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= f.check_box(:disabled, class: 'checkbox') %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <%= f.label :disabled_until, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= f.select(:disabled_until, ['permanent', Time.new.end_of_day, Time.new.tomorrow.end_of_day], {}, class: 'form-control') %>
+    </div>
+    <p class="help-block">Current setting is <%= @user.disabled_until || 'nil'%>. Nil means permanently disabled. </p>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit 'Submit', class: 'btn btn-default' %>
+  </div>
+  </div>
+<%end%>
+
+<% if @user.is_vendor? %>
+  <h4>Commission</h4>
+  <%= form_for([:admin, @user], method: 'patch', url: admin_user_path(@user), html: { class: 'form-horizontal' }) do |f| %>
+
+    <div class="form-group">
+    <%= f.label :commission, class: 'col-sm-2 control-label' %>
+      <div class="col-sm-4">
+        <%= f.text_field(:commission, class: 'form-control') %>
+      </div>
+      <p class="help-block">Fraction to use for commission. If nil, system setting is used (<%=Rails.configuration.commission%>).</p>
+    </div>
+    <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-4">
+      <%= f.submit 'Submit', class: 'btn btn-default' %>
+    </div>
+    </div>
+  <%end%>
+<%end%>

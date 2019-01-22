@@ -1,0 +1,90 @@
+<div class="panel panel-default">
+  <div class="panel-heading">
+     Logged in as: <%= link_to current_user.username, profile_path(current_user) %>
+     (<%= current_user.displayname %>)
+  </div>
+  <div class="panel-body">
+     <ul class="nav nav-pills nav-stacked">
+        <li>
+          <% cnt = current_user.message_refs.unseen.count %>
+          <% if cnt > 0 %>
+             <a href="<%=messages_path%>">Messages<span class="badge"><%=cnt%> new</span></a>
+          <%else%>
+             <%= link_to 'Messages', messages_path %>
+          <%end%>
+        </li>
+      <% if current_user.is_vendor? %>
+        <li>
+          <% cnt = current_user.received_orders.paid.unseen.count %>
+          <% if cnt > 0 %>
+             <a href="<%=vendor_orders_path%>">Orders<span class="badge"><%=cnt%> new</span></a>
+          <%else%>
+             <%= link_to 'Orders', vendor_orders_path %>
+          <%end%>
+        </li>
+        <li>
+           <%= link_to 'My products', vendor_products_path %>
+        </li>
+        <li>
+           <%= link_to 'Shipping options', shippingoptions_path %>
+        </li>
+      <% else %>
+        <li>
+           <% if current_user.multipay_available?(PaymentMethod.bitcoin) || current_user.multipay_available?(PaymentMethod.litecoin) %>
+             <a href="<%=orders_path%>">Orders<span class="badge">Multipay</span></a>
+           <%else%>
+             <%= link_to 'Orders', orders_path %>
+           <%end%>
+        </li>
+      <% end %>
+        <li>
+           <%= link_to 'Account', account_path %>
+        </li>
+      <% if Rails.configuration.enable_support_tickets %>
+        <li>
+           <% if current_user.ticket_messages.where(response_seen: false).count > 0 %>
+             <a href="<%=support_path%>">Support<span class="badge">new</span></a>
+           <%else%>
+             <%= link_to 'Support', tickets_path %>
+           <%end%>
+        </li>
+      <%end%>
+      <% if NewsPost.count > 0 %>
+        <li>
+          <%= link_to 'News', news_path %>
+        </li>
+      <%end%>
+      <li>
+         <%= link_to 'Logout', '#confirm_logout' %>
+      </li>
+     </ul>
+  </div>
+  <div class="panel-footer">
+    <% PaymentMethod.all.each do |pm| %>
+      <p>
+        <%=image_tag("#{pm.name.downcase}.svg", class: "small_logo", width: "16", height: "16")%>
+        <%=pm.code%>/<%=current_user.currency%>: <%=currency_format(pm.btc_rates.find_by(code: current_user.currency).try(:rate)) %>
+      </p>
+    <%end%>
+    <% if current_user.is_vendor? && NetworkFee.count > 0 %>
+    <%# only vendors are charged network fees currently %>
+      <p>
+        Withdrawal fee: <%= NetworkFee.find_by_weeknum(Date.today.cweek).try(:fee) %> BTC
+      </p>
+    <% end %>
+  </div>
+</div>
+
+<div id="confirm_logout" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Logout</h3>
+   <div>
+     <%= form_tag(session_path,  method: :delete) do %>
+       <%= submit_tag("Logout", class: 'btn btn-default') %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+     <% end %>
+   </div>
+ </div>
+</div>

@@ -1,0 +1,42 @@
+# docker-compose.yml example file for use on market server or payment server.
+# The commented sections are only applicable when configuring the market server.
+db:
+  image: postgres
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+trademed:
+  image: trademed
+  volumes:
+    - /home/rails/docker/log:/usr/src/app/log
+    - /home/rails/docker/public/system:/usr/src/app/public/system
+  ports:
+    - "3000:3000"
+  links:
+    - db:db.local
+  environment: &app_env
+    RAILS_ENV: production
+    RAILS_SERVE_STATIC_FILES: 'true'
+    SECRET_KEY_BASE: YOUR_SECRET_HERE
+    DATABASE_URL: postgres://trademed_prod:PASSWORD@db.local/trademed_prod
+    LOGO_FILENAME: logo.png
+    SITENAME: Trademed
+    GPG_KEY_ID: YOUR_KEY_ID
+    BLOCKCHAIN_CONFIRMATIONS: 3
+    ADMIN_API_KEY: YOUR_MARKET_SERVER_KEY
+
+    # Payout only settings.
+    TOR_PROXY_HOST: 192.168.1.2
+    TOR_PROXY_PORT: 9050
+    ADMIN_API_URI_BASE: http://admin.xxxxxxx.onion/
+    PAYOUT_BITCOIND_URI: http://bitcoinrpc:YOUR_RPC_PASSWORD_HERE@192.168.1.2:8332/
+    PAYOUT_LITECOIND_URI: ...
+    BITCOIND_ORDERS_ACCOUNT_NAME: trademed_orders
+
+    # Market only settings.
+    #DISPLAYNAME_HASH_SALT=xxxxxxx
+    #CURRENCIES=USD AUD EUR GBP CAD
+    #MARKET_BITCOIND_URI: http://bitcoinrpc:YOUR_RPC_PASSWORD_HERE@192.168.1.2:8332/
+    #ENABLE_VENDOR_REGISTRATION_FORM: 'true'
+    #ENABLE_MANDATORY_PGP_USER_ACCOUNTS: 'true'
+    #BITCOIND_WATCH_ADDRESS_LABEL: trademed_watches
+    #ADMIN_HOSTNAME: admin.xxxxxxx.onion

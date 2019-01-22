@@ -1,0 +1,90 @@
+<%= render partial: 'form_errors', locals: { what: @ticket } %>
+
+<h3>Support ticket</h3>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Title</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @ticket.title %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Opened date</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @ticket.created_at.in_time_zone(current_user.timezone).strftime('%F') %>
+  </div>
+</p>
+</div>
+
+<%= form_for(@ticket) do |f| %>
+
+<div class="row">
+<p>
+  <div class="form-group">
+    <%= f.label :status, class: 'col-md-3 control-label' %>
+    <div class="col-sm-2">
+    <%= f.select(:status, %w(open closed), {}, class: 'form-control') %>
+    </div>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<div class="col-md-8">
+    <%= f.fields_for :ticket_messages do |tm| %>
+      <% if tm.object.new_record? %>
+        <p>
+        <div class="form-group">
+          <%= tm.label :message, "New message" %>
+          <%= tm.text_area :message, rows: 5, class: 'form-control' %>
+        </div>
+
+        <div class="form-group">
+          <%= f.submit "Update", id: 'submit', class: 'btn btn-primary' %>
+        </div>
+        </p>
+      <%end%>
+    <%end%>
+    <% @ticket.ticket_messages.each do |tm| %>
+      <% unless tm.new_record? %>
+        <%# Iterating through the saved ticket_messages, displaying response field above message field.
+            For a new ticket created by user the response field will be nil until admin responds. %>
+        <% if tm.response != nil %>
+          <% cssclass = [] %>
+          <% if tm.response[/-----BEGIN/] %>
+          <%   cssclass.push 'encrypted' %>
+          <% else %>
+          <%   cssclass.push 'plaintext' %>
+          <% end %>
+          <div class="message received <%= cssclass.join(' ') %>">
+<%= tm.response.split("\r\n").collect{ |line| h line}.join("<br>").html_safe  %>
+          </div>
+        <%end%>
+
+        <% if tm.message != nil %>
+          <%# When ticket_message created by user, this will always be non-nil, but when admin creates
+              a ticket_message, this field will be left nil and response field will contain admin's message to user %>
+          <% cssclass = [] %>
+          <% if tm.message[/-----BEGIN/] %>
+          <%   cssclass.push 'encrypted' %>
+          <% else %>
+          <%   cssclass.push 'plaintext' %>
+          <% end %>
+          <div class="message sent <%= cssclass.join(' ') %>">
+<%= tm.message.split("\r\n").collect{ |line| h line}.join("<br>").html_safe  %>
+          </div>
+        <%end%>
+      <%end%><%# new_record? %>
+    <%end%>
+</div>
+</div>
+
+<% end %><%#form_for%>

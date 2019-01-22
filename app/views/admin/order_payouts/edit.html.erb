@@ -1,0 +1,36 @@
+<h3>Edit order payout</h3>
+
+<%= render partial: 'form_errors', locals: { what: @order_payout } %>
+
+<p>
+This form is for manually setting vendor or buyer payout information. Normally these fields will be updated automatically
+by the payout server connecting to the market api, but this is for situations where you have the payment server turned off
+and will use another wallet to manually make payments.
+</p>
+<p>
+By manually setting the paid flag and txid field, the user will know
+that payment has occurred and it will prevent the payment server from retrieving this record to process a payment.
+Make sure the payment server has not already retrieved this record.
+</p>
+<%= form_for([:admin, @order_payout], method: 'patch', html: {class: 'form-horizontal'}) do |f| %>
+  <div class="form-group">
+    <%= f.label :paid, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= f.check_box(:paid, class: 'checkbox') %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :txid, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= f.text_field :txid, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit id: 'submit', class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+<%end%>

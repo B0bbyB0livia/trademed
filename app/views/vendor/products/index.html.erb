@@ -1,0 +1,40 @@
+<h3>Products</h3>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Stock quantity</th>
+      <th>Sales enabled</th>
+      <th>Hidden</th>
+      <th colspan="2"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @products.each do |product| %>
+      <tr>
+        <td><%= product.title %></td>
+        <td><%= sprintf("%g", product.stock) %></td>
+        <td>
+          <% if product.available_for_sale %>
+            <%=image_tag('checkmark.svg')%>
+          <%end%>
+        </td>
+        <td>
+          <% if product.hidden %>
+            <%=image_tag('checkmark.svg')%>
+          <%end%>
+        </td>
+        <td>
+          <div class="pull-right">
+            <%= link_to 'Details', vendor_product_path(product), class: "btn btn-primary btn-sm" %>
+            <%= link_to 'Edit', edit_vendor_product_path(product), class: "btn btn-primary btn-sm" %>
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p><%= link_to 'Add product', new_vendor_product_path, class: "btn btn-primary" %></p>

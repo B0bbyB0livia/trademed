@@ -1,0 +1,30 @@
+<h3>New ticket</h3>
+
+<%= form_for(@ticket, :html => { class: 'form-horizontal' } ) do |f| %>
+
+  <%= render partial: 'form_errors', locals: { what: @ticket} %>
+
+  <div class="form-group">
+    <%= f.label :title, 'Title', class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :title, class: 'form-control' %>
+    </div>
+  </div>
+
+  <%= f.fields_for :ticket_messages do |tm| %>
+    <div class="form-group">
+      <%= tm.label :message, 'Message', class: 'col-sm-2 control-label' %>
+      <div class="col-md-8">
+      <%= tm.text_area :message, rows: 5, class: 'form-control' %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4 form-button">
+    <%= f.submit class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+<% end %>
+

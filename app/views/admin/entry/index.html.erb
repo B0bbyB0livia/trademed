@@ -1,0 +1,124 @@
+<%if is_market? %>
+  <h3>Market admin</h3>
+
+  <% if BtcAddress.bitcoin.unassigned.count < 100 %>
+  <div class="alert alert-danger">
+    Less than 100 bitcoin addresses are available to assign to new orders. You should generate more addresses.
+  </div>
+  <% end %>
+
+  <% if PaymentMethod.litecoin_exists? && BtcAddress.litecoin.unassigned.count < 100 %>
+  <div class="alert alert-danger">
+    Less than 100 litecoin addresses are available to assign to new orders. You should generate more addresses.
+  </div>
+  <% end %>
+
+  <table class="table">
+    <tr>
+      <th>Historical stats</th>
+      <th>48 hr</th>
+      <th>7 day</th>
+    </tr>
+    <tr>
+      <td>Successful user logins</td>
+      <td><%= @successful_logins_last_48h %></td>
+      <td><%= @successful_logins_last_7d %></td>
+    </tr>
+    <tr>
+      <td>Users that could not login with over ten failed attempts</td>
+      <td><%= @failed_logins_over_10_attempts_last_48h %></td>
+      <td><%= @failed_logins_over_10_attempts_last_7d %></td>
+    </tr>
+    <tr>
+      <td>New user accounts</td>
+      <td><%= @new_accounts_last_48h %></td>
+      <td><%= @new_accounts_last_7d %></td>
+    </tr>
+    <tr>
+      <td>New orders (including unconfirmed)</td>
+      <td><%= @new_orders_created_last_48h %></td>
+      <td><%= @new_orders_created_last_7d %></td>
+    </tr>
+    <tr>
+      <td>New confirmed orders (address assigned)</td>
+      <td><%= @new_orders_confirmed_last_48h %></td>
+      <td><%= @new_orders_confirmed_last_7d %></td>
+    </tr>
+    <tr>
+      <td>New orders where payment was received</td>
+      <td><%= @new_orders_after_paid_last_48h %></td>
+      <td><%= @new_orders_after_paid_last_7d %></td>
+    </tr>
+    <tr>
+      <td>Bitcoin payments received</td>
+      <td><%= @payments_received_48h %></td>
+      <td><%= @payments_received_7d %></td>
+    </tr>
+    <% if PaymentMethod.litecoin_exists? %>
+      <tr>
+        <td>Litecoin payments received</td>
+        <td><%= @ltc_payments_received_48h %></td>
+        <td><%= @ltc_payments_received_7d %></td>
+      </tr>
+    <%end%>
+    <tr>
+      <td>New products created</td>
+      <td><%= @new_products_created_last_48h %></td>
+      <td><%= @new_products_created_last_7d %></td>
+    </tr>
+  </table>
+
+  <table class="table">
+    <tr>
+      <th>Current stats</th>
+      <th></th>
+    </tr>
+    <tr>
+      <td>Available bitcoin addresses</td>
+      <td><%= BtcAddress.unassigned.count %></td>
+    </tr>
+    <% if PaymentMethod.litecoin_exists? %>
+      <tr>
+        <td>Available litecoin addresses</td>
+        <td><%= BtcAddress.litecoin.unassigned.count %></td>
+      </tr>
+    <%end%>
+    <tr>
+      <td>User count</td>
+      <td><%= User.count %></td>
+    </tr>
+    <tr>
+      <td><%= link_to 'Order payouts owing', admin_orders_path(filter: 'owing_payouts') %></td>
+      <td><%= @order_payouts_owing %></td>
+    </tr>
+    <tr>
+      <td><%= link_to 'Order payouts pending (subset of owing because address is set)', admin_orders_path(filter: 'pending_payouts') %></td>
+      <td><%= @order_payouts_pending %></td>
+    </tr>
+    <tr>
+      <td><%= link_to 'Expired orders with payouts (subset of owing). These are buyer payouts.', admin_orders_path(filter: 'owing_payouts', filter_status: 'expired') %></td>
+      <td><%= @expired_order_payouts_owing %></td>
+    </tr>
+    <tr>
+      <td><%= link_to 'Orders currently locked', admin_orders_path(filter: 'locked') %></td>
+      <td><%= Order.where(locked: true).count %></td>
+    </tr>
+    <% if NetworkFee.count > 0 %>
+      <tr>
+        <td>Current network fee for this week</td>
+        <td><%= NetworkFee.find_by_weeknum(Date.today.cweek).try(:fee) %> BTC</td>
+      </tr>
+    <%end%>
+    <tr>
+      <td>Idle vendors (no visit for 72 hrs) and still accepting sales</td>
+      <td>
+        <% @idle_vendor_displaynames.each do |name| %>
+          <div><%=name%></div>
+        <%end%>
+      </td>
+    </tr>
+  </table>
+<% else %>
+  <h3>Payment admin</h3>
+    Payment server admin. Read INSTALL.md for how to generate new addresses and make payments on the command line. These pages only display information.
+<% end %>

@@ -1,0 +1,22 @@
+<%= form_for(@shippingoption, html: {class: 'form-horizontal'}) do |f| %>
+  <%= render partial: 'form_errors', locals: { what: @shippingoption } %>
+
+  <div class="form-group">
+    <%= f.label :description, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :description, class: 'form-control' %>
+    </div>
+  </div>
+  <div class="form-group">
+    <%= f.label :price, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :price, class: 'form-control' %>
+    <p class="help-block">Prices will be saved your preferred currency in account settings.</p>
+    </div>
+  </div>
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit class: 'btn btn-primary' %>
+  </div>
+  </div>
+<% end %>

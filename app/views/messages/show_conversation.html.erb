@@ -1,0 +1,48 @@
+<h3>Messages with <%= @message.recipient.displayname %></h3>
+
+<p><%= link_to 'show their public key', '#copy_users_pubkey_modal' %></p>
+
+<div class="row">
+ <div class="col-md-8">
+  <%= form_for(@message) do |f| %>
+    <%= render partial: 'form_errors', locals: { what: @message } %>
+
+    <div class="form-group">
+     <%= f.label :body, "New message" %>
+      <%= f.text_area :body, rows: 5, class: 'form-control' %>
+    </div>
+
+     <%= f.hidden_field :recipient_id %>
+
+    <div class="form-group">
+      <%= f.submit "Send Message", id: 'submit', class: 'btn btn-primary' %>
+    </div>
+  <% end %>
+
+  <%= render "conversation" %>
+
+ </div>
+</div>
+
+<div id="copy_users_pubkey_modal" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Public key</h3>
+
+   <small>
+   <%= simple_format h(@gpg_id_str) %>
+   </small>
+
+   <p>click text box and press
+      <kbd>ctrl a</kbd>
+      <kbd>ctrl c</kbd>
+   </p>
+   <p>
+   <textarea readonly rows="15" class="form-control pgp-textarea">
+<%= @message.recipient.publickey -%>
+   </textarea>
+   </p>
+     <%= link_to 'Close', '#close', class: 'btn btn-default' %>
+ </div>
+</div>

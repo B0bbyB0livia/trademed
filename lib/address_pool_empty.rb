@@ -1,0 +1,2 @@
+class AddressPoolEmpty < StandardError
+end

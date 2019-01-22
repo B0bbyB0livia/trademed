@@ -1,0 +1,38 @@
+<h3>Categories</h3>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Product count</th>
+      <th>Sort index</th>
+      <th colspan=1"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @categories.each do |cat| %>
+      <tr>
+        <td class="nowrap"><%= cat.name  %></td>
+        <% cat_product_count = cat.products.count %>
+        <td><%= cat_product_count %></td>
+        <td><%= cat.sortorder %></td>
+        <td class="nowrap">
+          <div>
+          <%# Put the edit link inside form just for formatting so they are one same line %>
+          <%= form_tag([:admin, cat],  method: :delete) do %>
+            <%= link_to 'Edit', edit_admin_category_path(cat), class: "btn btn-primary btn-sm" %>
+            <%= submit_tag("Delete", class: "btn btn-danger btn-sm") if cat_product_count == 0 %>
+            <%# Tried using 'disabled' class to prevent delete when products exist in category but
+                it would hover a circle crossed out and clicking would still submit the delete action.
+                disabled css class can be used on links that are displayed as buttons to prevent clicking.
+                but disabled css class shouldn't be used on inputs like submit button because it appears disabled but still allows clicking.%>
+          <% end %>
+          </div>
+        </td>
+      </tr>
+    <%end%>
+
+  </tbody>
+</table>
+<p><%= link_to 'Add category', new_admin_category_path, class: "btn btn-primary" %></p>

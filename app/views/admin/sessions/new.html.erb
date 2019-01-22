@@ -1,0 +1,25 @@
+<h3>Admin Login</h3>
+
+<%# sessions_path POST goes to sessions#create %>
+<%= form_tag admin_sessions_path, class: 'form-horizontal' do %>
+
+  <div class="form-group">
+    <%= label_tag :username, nil, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= text_field_tag :username, params[:username], class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= label_tag :password, nil, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= password_field_tag :password, nil, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-4">
+      <%= submit_tag "Login", id: 'submit', class: 'btn btn-default' %>
+    </div>
+  </div>
+<% end %>

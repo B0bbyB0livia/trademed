@@ -1,0 +1,59 @@
+<div class="panel panel-default">
+  <div class="panel-heading">
+     Logged in as: <%=admin_user.username%>
+     (<%= admin_user.displayname %>)
+  </div>
+  <div class="panel-body">
+     <ul class="nav nav-pills nav-stacked">
+       <%if is_market? %>
+
+        <li><%= link_to 'Admin home', admin_path %></li>
+        <li>
+           <% cnt = TicketMessage.where(message_seen: false).count %>
+           <% if cnt > 0 %>
+             <a href="<%=admin_tickets_path%>">Tickets<span class="badge"><%=cnt%> updates</span></a>
+           <%else%>
+             <%= link_to 'Tickets', admin_tickets_path %>
+           <%end%>
+        </li>
+        <li><%= link_to 'Users', admin_users_path %></li>
+        <li><%= link_to 'Orders', admin_orders_path %></li>
+        <li><%= link_to 'Products', admin_products_path %></li>
+        <li><%= link_to 'Market addresses', admin_btc_address_search_form_path %></li>
+        <li><%= link_to 'News Posts', admin_news_posts_path %></li>
+        <li><%= link_to 'Categories', admin_categories_path %></li>
+        <li><%= link_to 'Locations', admin_locations_path %></li>
+
+       <%else%><%#is market %>
+
+        <li><%= link_to 'Generated addresses', admin_generated_address_search_form_path %></li>
+        <li>
+           <% cnt = Payout.where.not(payout_btc_address: '').where(paid: false).count %>
+           <% if cnt > 0 %>
+             <a href="<%=admin_payouts_path%>">Payouts<span class="badge"><%=cnt%> requests</span></a>
+           <%else%>
+             <%= link_to 'Payouts', admin_payouts_path %>
+           <%end%>
+        </li>
+       <%end%>
+       <li>
+        <%= link_to 'Logout', '#confirm_logout' %>
+       </li>
+
+     </ul>
+  </div>
+</div>
+
+<div id="confirm_logout" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Logout</h3>
+   <div>
+     <%= form_tag(admin_session_path,  method: :delete) do %>
+       <%= submit_tag("Logout", class: 'btn btn-default') %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+     <% end %>
+   </div>
+ </div>
+</div>

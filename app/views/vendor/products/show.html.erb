@@ -1,0 +1,47 @@
+<% if @product.hidden %>
+  <div class="alert alert-warning">
+    <p>This product is currently hidden from listings. Hidden url for customers is:</p>
+    <p><%=product_url(@product)%></p>
+  </div>
+<%end%>
+<%= render partial: 'products/product', locals: { product: @product } %>
+
+<%= link_to 'Edit', edit_vendor_product_path(@product), class: 'btn btn-primary form-button' %>
+<%= link_to 'Clone', '#clone', class: 'btn btn-primary form-button' %>
+<%= link_to 'Delete', '#confirm_delete', class: 'btn btn-danger form-button' %>
+
+<div id="confirm_delete" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Delete</h3>
+   <p>
+   Are you sure you want to delete this product?
+   </p>
+   <%= form_tag([:vendor, @product],  method: :delete) do %>
+     <%= submit_tag("Delete", class: 'btn btn-danger') %>
+     <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+   <% end %>
+ </div>
+</div>
+
+<div id="clone" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Clone product</h3>
+   <p>
+   Enter the new product title.
+   </p>
+     <%= form_for([:vendor, @product], method: 'post', url: vendor_clone_product_path(@product)) do |f| %>
+       <div class="form-group">
+       <%= f.label :title, class: 'control-label' %>
+       <%= f.text_field :title, class: 'form-control' %>
+       </div>
+       <p>
+       <%= f.submit 'Submit', class: 'btn btn-primary' %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+       </p>
+     <%end%>
+ </div>
+</div>

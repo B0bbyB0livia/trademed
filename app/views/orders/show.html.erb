@@ -1,0 +1,111 @@
+<%= render partial: 'form_errors', locals: { what: @order } %>
+
+<h3>Order #<%= @order.id %></h3>
+
+<%= render 'commonshow' %>
+
+<% if [Order::ACCEPTED, Order::SHIPPED].include? @order.status %>
+ <p>
+   <%= link_to 'Finalize', '#finalize', class: 'btn btn-success form-button' %>
+ </p>
+<% end %>
+
+<%# Allow buyer to adjust refund if already requested %>
+<% if @order.status == Order::REFUND_REQUESTED %>
+  <p><%= link_to 'Change refund request', '#refund', class: 'btn btn-primary form-button' %></p>
+<% elsif @order.status == Order::SHIPPED %>
+    <p><%= link_to 'Request refund', '#refund', class: 'btn btn-default' %></p>
+<% end %>
+
+<% if @order.status == Order::SHIPPED %>
+  <p>
+  <%= form_for(@order, method: 'post', url: { action: 'extend_autofinalize' }) do |f| %>
+    <% if @order.allow_extend_autofinalize? %>
+      <%= f.submit 'Extend autofinalize', class: 'btn btn-default form-button' %>
+    <%else%>
+      <%= f.submit 'Extend autofinalize', class: 'btn btn-default form-button', disabled:true %>
+    <%end%>
+  <% end %>
+  </p>
+<% end %>
+
+<% if @order.allow_feedback_submission? && @order.feedbacks.find_by(placedby: current_user).nil? %><%# use find_by so it returns a feedback or nil. %>
+  <%= link_to 'Submit feedback', new_feedback_path(order: @order.id), class: 'btn btn-primary form-button' %>
+<%end%>
+
+<% if @order.allow_delete? %>
+  <%= link_to 'Delete', '#confirm_delete', class: 'btn btn-danger form-button' %>
+<% end %>
+
+<div id="refund" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Refund request</h3>
+   <p>
+   Send refund request to vendor.
+   </p>
+  <%= form_for(@order, method: 'post', url: { action: 'request_refund' }, html: { class: 'form-inline' }) do |f| %>
+      <div class="form-group">
+        <%= f.label :refund_requested_fraction, 'Refund amount', class: 'control-label' %>
+        <%= f.select :refund_requested_fraction,
+            options_for_select( (0..100).select{|i| i % 5 == 0}.collect{|i| [number_to_percentage(i, precision: 0), BigDecimal(i)/100]}, @order.refund_requested_fraction ),
+            {}, class: 'form-control' %>
+        <%= f.submit 'Request refund', class: 'btn btn-primary' %>
+     <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+      </div>
+  <%end%>
+ </div>
+</div>
+
+<div id="confirm_delete" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm Delete</h3>
+   <p>
+     <%= form_tag(@order,  method: :delete) do %>
+       <%= submit_tag("Delete", class: 'btn btn-danger') %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+   <% end %>
+   </p>
+ </div>
+</div>
+
+<div id="finalize" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Confirm finalize</h3>
+   <p>
+   This will pay the vendor 100% of funds paid.
+   </p>
+   <p>
+    <%= form_for(@order, method: 'post', url: { action: 'finalize' }) do |f| %>
+      <%= f.submit 'Finalize', class: 'btn btn-success' %>
+      <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+    <% end %>
+   </p>
+ </div>
+</div>
+
+<div id="payout" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Set payout address</h3>
+   <p>
+   Enter the <%=@order.payment_method.name%> address to receive payment for this order.
+   </p>
+     <%= form_for(@order, method: 'post', url: payout_address_order_path(@order)) do |f| %>
+       <div class="form-group">
+       <%= f.label :payout_address, "#{@order.payment_method.name} address", class: 'control-label' %>
+       <%= f.text_field :payout_address, class: 'form-control' %>
+       </div>
+       <p>
+       <%= f.submit 'Submit', class: 'btn btn-primary' %>
+       <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+       </p>
+     <%end%>
+ </div>
+</div>

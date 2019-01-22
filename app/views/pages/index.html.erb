@@ -1,0 +1,28 @@
+<div class="row">
+<div class="col-md-12">
+<% if @show_news %>
+  <h3>Recent news</h3>
+  <table class="table">
+  <% @news.each do |post| %>
+    <%# nil.try always returns nil. in_time_zone(nil) gives UTC. so when visitor not logged in they get UTC time. %>
+    <tr>
+      <td class="news_date nowrap"><%=post.post_date.in_time_zone(current_user.try(:timezone)).strftime('%F') %></td>
+      <td><%=simple_format h(post.message)%></td>
+    </tr>
+  <%end%>
+  </table>
+<%end%>
+
+<h3>Product list</h3>
+<% if Product.count == 0 %>
+  <p>
+  There are no products currently in the system.
+  To create products, first register a vendor account.
+  </p>
+  <p>
+  Create an admin account as described in INSTALL.md and using the admin account, create product categories and shipping locations.
+  </p>
+<% end %>
+<%= render 'products/indextable' %>
+</div>
+</div>

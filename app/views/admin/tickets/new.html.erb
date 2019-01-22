@@ -1,0 +1,39 @@
+<h3>New ticket</h3>
+
+<%= form_for([:admin, @ticket], :html => { class: 'form-horizontal' } ) do |f| %>
+
+  <%= render partial: 'form_errors', locals: { what: @ticket} %>
+
+  <div class="form-group">
+    <%= f.label :title, 'Title', class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :title, class: 'form-control' %>
+    <%= f.hidden_field :user_id %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :status, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-2">
+    <%= f.select(:status, %w(open info), {}, class: 'form-control') %>
+    </div>
+  </div>
+
+  <%= f.fields_for :ticket_messages do |tm| %>
+    <div class="form-group">
+      <%= tm.label :response, 'Message', class: 'col-sm-2 control-label' %>
+      <div class="col-md-8">
+      <%= tm.text_area :response, rows: 5, class: 'form-control' %>
+      <%= tm.hidden_field(:response_seen) %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4 form-button">
+    <%= f.submit class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+<% end %>
+

@@ -1,0 +1,68 @@
+<h3>Market bitcoin addresses</h3>
+
+<table class="table">
+  <tr>
+    <td>Assigned to orders</td><td><%= PaymentMethod.bitcoin.btc_addresses.assigned.count %></td>
+  </tr>
+  <tr>
+    <td>Available (unassigned to orders)</td><td><%= PaymentMethod.bitcoin.btc_addresses.unassigned.count %></td>
+  </tr>
+  <tr>
+    <td>PGP signature present</td><td><%= PaymentMethod.bitcoin.btc_addresses.signed.count %></td>
+  </tr>
+  <tr>
+    <td>Total count</td><td><%= PaymentMethod.bitcoin.btc_addresses.count %></td>
+  </tr>
+</table>
+
+<% if PaymentMethod.litecoin_exists? %>
+  <h3>Market litecoin addresses</h3>
+
+  <table class="table">
+    <tr>
+      <td>Assigned to orders</td><td><%= PaymentMethod.litecoin.btc_addresses.assigned.count %></td>
+    </tr>
+    <tr>
+      <td>Available (unassigned to orders)</td><td><%= PaymentMethod.litecoin.btc_addresses.unassigned.count %></td>
+    </tr>
+    <tr>
+      <td>PGP signature present</td><td><%= PaymentMethod.litecoin.btc_addresses.signed.count %></td>
+    </tr>
+    <tr>
+      <td>Total count</td><td><%= PaymentMethod.litecoin.btc_addresses.count %></td>
+    </tr>
+  </table>
+<% end %>
+
+<h3>Search</h3>
+<%=form_tag admin_btc_address_search_path, class: 'form-horizontal' do %>
+  <div class="form-group">
+    <%= label_tag :btc_address, 'Address', class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+      <%= text_field_tag :btc_address, nil, class: 'form-control' %>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-4">
+      <%= submit_tag "Search", class: 'btn btn-default' %>
+    </div>
+  </div>
+<%end%>
+
+<% if @btc_address %>
+  <p>
+  <%= @btc_address.address %>
+  </p>
+
+  <pre>
+<%= @btc_address.pgp_signature %>
+  </pre>
+
+  <p>
+  <%if @btc_address.order %>
+    Assigned to <%= link_to 'order', admin_order_path(@btc_address.order) %>
+  <%else%>
+    Available to be assigned to a new order.
+  <%end%>
+  </p>
+<% end %>

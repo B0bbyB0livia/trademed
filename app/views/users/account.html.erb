@@ -1,0 +1,15 @@
+<h3>Account</h3>
+<div class="row">
+<div class="col-md-4">
+ <ul class="nav nav-pills nav-stacked">
+  <li><%= link_to 'Edit account / profile', account_edit_path %></li>
+  <li><%= link_to 'Change Password', account_editpass_path %></li>
+  <li><%= link_to 'PGP Two factor auth', account_pgp_2fa_path %></li>
+  <li><%= link_to 'Show my profile', profile_path(@user) %></li>
+  <li><%= link_to 'Show my feedback', feedbacks_path(user_id: @user.id)  %></li>
+  <% if is_vendor? %>
+    <li><%= link_to 'Payment history', vendor_order_payouts_path %></li>
+  <%end%>
+ </ul>
+</div>
+</div>

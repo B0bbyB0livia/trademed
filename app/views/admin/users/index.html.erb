@@ -1,0 +1,39 @@
+<h1>All users (<%=@users.size%>)</h1>
+
+<p>Default sort order is <b>last seen</b>. Param name <b>sort</b> allows sorting by created, updated, username, displayname.</p>
+
+<table id="users" class="table table-condensed">
+  <thead>
+    <tr>
+      <th>Displayname</th>
+      <th>Username</th>
+      <th>Type</th>
+      <th>PGP 2FA</th>
+      <th>Created</th>
+      <th>Last login</th>
+      <th>Updated</th>
+      <th>Logins</th>
+      <th>Failed logins</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @users.each do |user| %>
+      <tr>
+        <td><%= user.displayname %></td>
+        <td><%= link_to user.username, admin_user_path(user) %></td>
+        <td><%= user.vendor ? "vendor" : "user" %></td>
+        <td>
+          <% if user.pgp_2fa %>
+            <%=image_tag('checkmark.svg')%>
+          <%end%>
+        </td>
+        <td class="nowrap small"><%= user.created_at.in_time_zone(admin_user.timezone).to_s(:FHMnozone) %></td>
+        <td class="nowrap small"><%= user.lastlogin.in_time_zone(admin_user.timezone).to_s(:FHMnozone) %></td>
+        <td class="nowrap small"><%= user.updated_at.in_time_zone(admin_user.timezone).to_s(:FHMnozone) %></td>
+        <td><%= user.logincount %></td>
+        <td><%= user.failedlogincount %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

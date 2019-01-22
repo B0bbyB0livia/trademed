@@ -1,0 +1,22 @@
+<%# sort hash by keys %>
+<% @deleted_message_daygroups.sort.reverse.each do |day, messages| %>
+  <div class="daygroup">
+    <div class="daygroupdate"><%= day.in_time_zone(admin_user.timezone).strftime('%F') %></div>
+    <% messages.sort_by{|msg| msg.created_at}.reverse.each do |msg| %>
+      <% cssclass = [] %>
+      <% cssclass.push msg.sender == @user ? 'sent' : 'received' %>
+      <% if msg.body[/-----BEGIN/] %>
+      <%   cssclass.push 'encrypted' %>
+      <% else %>
+      <%   cssclass.push 'plaintext' %>
+      <% end %>
+      <div class="message <%= cssclass.join(' ') %>">
+<%= msg.body.split("\r\n").collect{ |line| h line}.join("<br>").html_safe  %>
+      </div>
+<%# The above message is printed on one long line in the source code with no newline chars.
+    This allows copying PGP messages correctly while using the break-word styling in Firefox.
+    Chrome doesn't have the copy problem that Firefox has. %>
+    <% end %>
+  </div><%# daygroup %>
+
+<% end %>

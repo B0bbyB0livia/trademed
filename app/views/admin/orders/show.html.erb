@@ -1,0 +1,152 @@
+<%= render partial: 'form_errors', locals: { what: @order } %>
+
+<h3>Order #<%= @order.id %></h3>
+
+<%= render 'orders/commonshow' %>
+
+<% if feedback_placed = @order.feedbacks.find_by(placedby: @order.vendor) %><%# use find_by so it returns a feedback or nil. %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+      <strong>Feedback placed by vendor</strong>
+    </div>
+    <div class="col-md-9">
+      <%= feedback_placed.feedback %>
+    </div>
+  </p>
+  </div>
+  <% unless feedback_placed.response.empty? %>
+    <div class="row">
+    <p>
+      <div class="col-md-3">
+        <strong>Response</strong>
+      </div>
+      <div class="col-md-9">
+        <%= feedback_placed.response %>
+      </div>
+    </p>
+    </div>
+  <% end %>
+<%end%>
+
+<% if feedback_received = @order.feedbacks.find_by(placedon: @order.vendor) %>
+  <div class="row">
+  <p>
+    <div class="col-md-3">
+      <strong>Feedback on vendor received</strong>
+    </div>
+    <div class="col-md-9">
+      <%= feedback_received.feedback %>
+      <% if feedback_received.response.empty? %>
+      <%end%>
+    </div>
+  </p>
+  </div>
+  <% unless feedback_received.response.empty? %>
+    <div class="row">
+    <p>
+      <div class="col-md-3">
+        <strong>Response</strong>
+      </div>
+      <div class="col-md-9">
+        <%= feedback_received.response %>
+      </div>
+    </p>
+    </div>
+  <% end %>
+<%end%>
+
+<%# If vendor payout object exists but not paid and vendor has set btc address,
+    allow admin to manually set paid=true so payments can be processed independently of the payment server.
+    This is for situations where you have the payment server turned off and will use another wallet to manually make payments.
+    This can only be set once, for simplicity. There should be no reason to go back and change it.
+%>
+<% if @order.vendor_payout.try(:paid) == false && @order.vendor_payout.btc_address%>
+ <p>
+   <%= link_to 'Set vendor payout', admin_edit_order_payout_path(@order.vendor_payout), class: "btn btn-primary form-button" %>
+ </p>
+<% end %>
+<%# Similarly for buyer payouts %>
+<% if @order.buyer_payout.try(:paid) == false && @order.buyer_payout.btc_address%>
+ <p>
+   <%= link_to 'Set buyer payout', admin_edit_order_payout_path(@order.buyer_payout), class: "btn btn-primary form-button" %>
+ </p>
+<% end %>
+
+
+<p>
+  <% if @order.buyer_payout.try(:paid) || !@order.allow_admin_to_set_paid? %>
+    <%= link_to 'Set order paid', '#set_paid', class: "btn btn-primary form-button disabled" %>
+  <% else %>
+    <%= link_to 'Set order paid', '#set_paid', class: "btn btn-primary form-button" %>
+  <% end %>
+</p>
+
+<% if @order.payment_received > 0 %>
+ <p>
+   <%= link_to 'Admin finalize', '#admin_finalize', class: "btn btn-primary form-button #{@order.allow_admin_finalize? || 'disabled'}" %>
+ </p>
+<% end %>
+
+<% if @order.locked %>
+  <%= form_for([:admin, @order], method: 'post', url: { action: 'unlock' }) do |f| %>
+    <div class="actions">
+      <%= f.submit 'Unlock', class: 'btn btn-warning form-button' %>
+    </div>
+  <% end %>
+  <p class="help-block">
+    An order becomes locked when balance paid reduces. Check blockchain to verify that payment received is correct.
+    If payment received is wrong then manually update the field to correct amount using console after unlocking order.
+  </p>
+<%end%>
+
+<div id="set_paid" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Set order paid</h3>
+   <p>
+     This will set the order status to PAID, regardless of how much payment has been received. This is useful for a few situations.
+     Usually it will be when an order payment is received after expiry and the vendor chooses to fulfil the expired order rather than
+     asking the customer to order again.
+   </p>
+   <p>
+     Vendor stock quantites will not be automatically reduced.
+     The vendor will need to manually adjust their product stock quantity after status changed to paid.
+   </p>
+   <p>
+     When set to paid by admin, any refund data set by the buyer is deleted on market server.
+     However, <b>if the buyer has set a refund address on this order, then you need to ensure the refund does not get processed if setting this to paid.</b>
+     Check whether the buyer order payout has a refund address set. If it does, check if payment server has imported and paid it. If payment server hasn't
+     paid it, delete the imported payout record before setting this paid.
+   </p>
+
+   <%= form_for([:admin, @order], method: 'post', url: admin_set_paid_order_path(@order)) do |f| %>
+       <div class="actions">
+         <%= f.submit 'Set order paid', class: "btn btn-primary form-button" %>
+       </div>
+   <% end %>
+
+ </div>
+</div>
+
+<div id="admin_finalize" class="modalDialog" hidden>
+  <div>
+   <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+   <h3>Admin finalize</h3>
+   <p>
+   Set buyer refund percentage, the remainder will be paid to vendor, less commission.
+   </p>
+  <%= form_for([:admin, @order], method: 'post', url: admin_finalize_order_path(@order), html: { class: 'form-inline' }) do |f| %>
+      <div class="form-group">
+        <%= f.label :admin_finalized_refund_fraction, 'Refund buyer', class: 'control-label' %>
+        <%= f.select :admin_finalized_refund_fraction,
+            options_for_select( (0..100).select{|i| i % 5 == 0}.collect{|i| [number_to_percentage(i, precision: 0), BigDecimal(i)/100]}),
+            {}, class: 'form-control' %>
+        <%= f.submit 'Submit', class: 'btn btn-primary' %>
+     <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+      </div>
+  <%end%>
+ </div>
+</div>

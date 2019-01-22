@@ -1,0 +1,27 @@
+<h3>Shipping options</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>Price</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @shippingoptions.each do |shippingoption| %>
+      <tr>
+        <td><%= shippingoption.description %></td>
+        <td><%= currency_format(shippingoption.price) %> <%=shippingoption.currency%></td>
+        <td>
+          <div class="pull-right">
+            <%= link_to 'Details', shippingoption_path(shippingoption), class: 'btn btn-primary btn-sm' %>
+            <%= link_to 'Edit', edit_shippingoption_path(shippingoption), class: 'btn btn-primary btn-sm' %>
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<%= link_to 'Add shipping option', new_shippingoption_path, class: 'btn btn-primary' %>

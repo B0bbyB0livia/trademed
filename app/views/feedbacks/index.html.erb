@@ -1,0 +1,66 @@
+<h3><%= @user.is_vendor? ? "Vendor" : "Buyer" %> feedback</h3>
+
+<p>
+<% if @product %>
+  Feedback placed on this <%=link_to 'product', product_path(@product) %> sold by <%= link_to @user.displayname, profile_path(@user) %>.
+<% else %>
+  All feedback placed on <%= link_to @user.displayname, profile_path(@user) %>.
+<% end %>
+</p>
+
+<% if @total_count == 0 %>
+ No feedback placed yet.
+<%else%>
+ <p>Total feedbacks <%=@total_count%>.</p>
+
+<table class="table table-condensed">
+  <tr>
+    <th></th>
+    <th>Placed by</th>
+    <th><% concat 'Product' if @user.is_vendor? %></th>
+    <th>Feedback</th>
+    <th>Order price</th>
+    <th>Date</th>
+  </tr>
+<% @feedbacks.each do |feedback| %>
+  <tr>
+    <td>
+      <% if feedback.rating == 'negative' %>
+        <%= image_tag 'sad_face1.gif', class: 'faceimage' %>
+      <% elsif feedback.rating == 'neutral' %>
+        <%= image_tag 'neutral_face1.gif', class: 'faceimage' %>
+      <%else%>
+        <%= image_tag 'happy_face1.gif', class: 'faceimage' %>
+      <%end%>
+    </td>
+    <td>
+      <%# A hash salt is added in which is the vendors username. This makes the buyers displayed hash different when they review different vendors. %>
+      <small><%= feedback.placedby.displayname_hash(@user.username) %></small>
+    </td>
+    <td>
+      <%# Don't show order title unless this is the vendors feedback page.
+          We don't want a buyers profile to show what they bought.
+          This partial is used on product#show so not necessary to show title there.
+          Use title from order, not product because product title can be changed by vendor. %>
+      <%= @user.is_vendor?  ? feedback.order.title : '' %>
+    </td>
+    <td>
+      <p><%= simple_format h(feedback.feedback) %></p>
+      <% unless feedback.response.empty? %>
+        <p><strong>Response:</strong> <%= simple_format h(feedback.response) %></p>
+      <%end%>
+    </td>
+    <td class="nowrap">
+      <% unless Rails.configuration.order_age_to_hide_price_on_review && feedback.order.created_at < Time.now - Rails.configuration.order_age_to_hide_price_on_review %>
+        <%# Unauthenticated users can view this so display prices in USD for them. %>
+        <%= number_to_range(feedback.order.total_price_in_currency(current_user.try(:currency) || "USD"), Rails.configuration.price_ranges) %>
+        <%= current_user.try(:currency) || "USD" %>
+      <% end %>
+    </td>
+    <%# nil.try always returns nil. in_time_zone(nil) gives UTC. so when visitor not logged in they get UTC time. %>
+    <td class="nowrap"><%= feedback.created_at.in_time_zone(current_user.try(:timezone)).strftime('%F') %></td>
+  </tr>
+<% end %>
+</table>
+<%= paginate @feedbacks %>
+<%end%>

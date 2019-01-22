@@ -1,0 +1,43 @@
+<table class="table table-condensed">
+ <thead>
+   <tr>
+     <th>Order id</th>
+     <th>Order date</th>
+     <th>Product</th>
+     <th class="align-right"><%=currency%> price</th>
+     <th class="align-right">Commission</th>
+     <th class="align-right">Payment</th>
+     <th><%=currency%> address</th>
+     <th>txid</th>
+     <th>Date paid</th>
+   </tr>
+ </thead>
+ <tbody>
+   <% order_payouts.each do |op| %>
+     <tr>
+       <td class="small"><%= link_to op.order_id[/\w+/], vendor_order_path(op.order_id) %></td>
+       <td><%= op.order_created.in_time_zone(current_user.timezone).strftime('%F') %></td>
+       <td><%= truncate(op.title, length:15) %></td>
+       <td class="nowrap align-right"><%= op.btc_price %></td>
+       <td class="nowrap align-right"><%= op.commission %></td>
+       <td class="nowrap align-right"><%= op.btc_amount %></td>
+       <%# btc_address, txid are normally set once order_payout paid but could be set to nil again for privacy reasons. %>
+       <td class="small"><%= op.btc_address[0..10] if op.btc_address %></td>
+       <td class="small"><%= op.txid[0..10] if op.txid %></td>
+       <td><%= op.updated_at.in_time_zone(current_user.timezone).strftime('%F') %></td>
+     </tr>
+
+   <%end%>
+ </tbody>
+<% if order_payouts.size > 0 %>
+ <tfoot>
+   <tr>
+     <td colspan="3">Totals:</td>
+     <td id="<%=currency%>_total_orders" class="align-right nowrap"><%= summary[0].total_orders %></td>
+     <td id="<%=currency%>_total_commissions" class="align-right nowrap"><%= summary[0].total_commissions %></td>
+     <td id="<%=currency%>_total_payouts" class="align-right nowrap"><%= summary[0].total_payouts %></td>
+     <td colspan="2"></td>
+   </tr>
+ </tfoot>
+<%end%>
+</table>

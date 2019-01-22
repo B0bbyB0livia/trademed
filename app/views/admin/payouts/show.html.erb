@@ -1,0 +1,211 @@
+<h3>Payout id #<%= @payout.id %></h3>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Order id</strong>
+  </div>
+  <div class="col-md-9">
+    <%= @payout.order_id %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Order created at</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.order_created.in_time_zone(session_user.timezone).to_s(:FHM)%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Username</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.username%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Displayname</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.displayname%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>User type</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.payout_type%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Order price</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.order_btc_price%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Payout amount</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.payout_btc_amount%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Commission</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.commission%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Paid</strong>
+  </div>
+  <div class="col-md-9">
+           <%if @payout.paid%>
+             paid
+           <%else%>
+             unpaid
+           <%end%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Payout address</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.payout_btc_address%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Schedule</strong>
+  </div>
+  <div class="col-md-9">
+    <ul>
+    <% @payout.payout_schedule.each do |s| %>
+      <li><%=Date::DAYNAMES[s]%></li>
+    <% end %>
+    </ul>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Created at</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.created_at.in_time_zone(admin_user.timezone).to_s(:FHM) %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Updated at</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.updated_at.in_time_zone(admin_user.timezone).to_s(:FHM) %>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>txid</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.txid%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Market updated</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.market_updated%>
+  </div>
+</p>
+</div>
+
+<%# fee and vsize always set together - so either both nil or both set to an integer. %>
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>Fee (satoshis)</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.fee%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>tx vsize (byte)</strong>
+  </div>
+  <div class="col-md-9">
+    <%=@payout.vsize%>
+  </div>
+</p>
+</div>
+
+<div class="row">
+<p>
+  <div class="col-md-3">
+    <strong>sat/vsize (byte)</strong>
+  </div>
+  <div class="col-md-9">
+    <% if @payout.vsize %>
+      <%= (@payout.fee.to_f / @payout.vsize).round(1) %>
+      rounded to 1 DP.
+    <%end%>
+  </div>
+</p>
+</div>

@@ -1,0 +1,26 @@
+<%= form_for([:admin, @category] , :html => { class: 'form-horizontal' }) do |f| %>
+
+  <%= render partial: 'form_errors', locals: { what: @category } %>
+
+  <div class="form-group">
+    <%= f.label :name, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :name, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :sortorder, 'Sort index', class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :sortorder, class: 'form-control' %>
+    <p class="help-block">Currently this field is unused anywhere in the app.</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4 form-button">
+    <%= f.submit class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+<% end %>

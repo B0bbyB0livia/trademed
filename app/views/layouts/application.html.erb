@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <title><%= Rails.configuration.sitename %></title>
+  <%= stylesheet_link_tag    "application", media: "all" %>
+  <%# admin_controller? is a helper %>
+  <%= stylesheet_link_tag("admin") if admin_controller? %>
+  <%= csrf_meta_tags %>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+<div class="container">
+ <div class="row backgroundimg">
+   <div class="col-md-3">
+    <%= link_to image_tag(Rails.configuration.logo_filename, id: 'logo', alt: 'site logo', class: 'img-responsive'), root_path %>
+   </div>
+   <div class="col-md-9">
+     <div class="pull-right">
+         <% if !current_user && !is_admin? && is_market? %>
+           <%= link_to 'Login', new_session_path, class: "btn btn-default navbar-btn" %>
+           <%= link_to 'Register', new_user_path, class: "btn btn-default navbar-btn" %>
+         <% end %>
+     </div>
+   </div>
+ </div>
+ <div class="row">
+   <div class="col-md-3 leftpanel">
+     <% if current_user %>
+       <%= render 'nav' %>
+       <%= render 'categories' %>
+     <%elsif is_admin? %>
+       <%= render 'admin_nav' %>
+     <% end %>
+
+   </div><%# col-md3 %>
+   <div class="col-md-9 main">
+     <div id="flashcontainer">
+       <% flash.each do |name, msg| %>
+         <% # map redirect_to flash keys (notice, alert) to bootstrap names.
+            if name == 'notice'
+              name = 'success'
+            elsif name == 'alert'
+              name = 'danger'
+            else
+              next    # not interested in every flash key; some are for controlling logic ie newuser variable.
+            end
+          %>
+         <%= content_tag :div, msg, :class => "alert alert-#{name}" %>
+       <% end %>
+     </div>
+
+     <%= yield %>
+
+
+
+   </div><%# col-md-9 %>
+ </div><%# row %>
+</div><%# container %>
+</body>
+</html>
+<%# Randomize page sizes so fingerprinting by packet analysis is harder. Don't bother with admin pages. %>
+<% if Rails.configuration.random_pad_http_response && Rails.env.production? && !is_admin? %>
+  <!--
+  <%
+  str = File.open("/dev/urandom",File::RDONLY || File::NONBLOCK || File::NOCTTY) do |f|
+    f.readpartial(Random.rand(2000))
+  end
+  %>
+  <%= Base64.encode64 str %>
+  -->
+<% end %>

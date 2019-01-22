@@ -1,0 +1,2 @@
+class OrderCurrencyConversionFailure < StandardError
+end

@@ -1,0 +1,9 @@
+<h3>Create product</h3>
+
+<% if current_user.shippingoptions.count == 0 %>
+  <p>
+  Before adding a product, you need to create at least one <%= link_to 'shipping option', shippingoptions_path %>
+  </p>
+<% else %>
+  <%= render 'form' %>
+<% end %>

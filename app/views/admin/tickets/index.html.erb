@@ -1,0 +1,38 @@
+<h3>Support tickets</h3>
+
+<p>To create a new ticket for a user, click their username link on users index page.</p>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Title</th>
+      <th>Displayname</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @tickets.each do |ticket| %>
+      <tr>
+        <td><%= ticket.created_at.in_time_zone(admin_user.timezone).to_s(:FHMnozone) %></td>
+        <td><%= ticket.title %></td>
+        <td><%= ticket.user.displayname %></td>
+        <td>
+          <% labeltype = (ticket.status == 'closed') ? 'warning' : 'primary' %>
+          <span class="label label-<%=labeltype%>"><%= ticket.status %></span>
+          <% if ticket.ticket_messages.where(message_seen: false).count > 0 %>
+            <span class="badge">unseen</span>
+          <%end%>
+        </td>
+        <td>
+          <div class="pull-right">
+          <%= link_to 'Details', admin_ticket_path(ticket), class: 'btn btn-primary' %>
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<%= paginate @tickets %>

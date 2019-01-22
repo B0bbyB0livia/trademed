@@ -1,0 +1,143 @@
+<h3>Orders</h3>
+
+<%if @btc_multipay_available %>
+  <%=link_to 'Multipay with bitcoin', multipay_path(payment_method: PaymentMethod.bitcoin.id), class: 'btn btn-primary btn-sm' %>
+<%end%>
+<%if @ltc_multipay_available %>
+  <%=link_to 'Multipay with litecoin', multipay_path(payment_method: PaymentMethod.litecoin.id), class: 'btn btn-primary btn-sm' %>
+<%end%>
+
+<p class="pull-right">
+<% if is_vendor? %>
+  <% if @filter_paid %>
+    <%= link_to 'Show unpaid', vendor_orders_path(filter_paid: false), class: 'btn btn-primary btn-xs' %>
+  <%elsif !@filter_archived_only %>
+    <%# 'Exclude unpaid' button appears on normal order list but not the archived order list. It is unlikely a vendor would have unpaid orders archived. %>
+    <%= link_to 'Exclude unpaid', vendor_orders_path(filter_paid: true), class: 'btn btn-primary btn-xs' %>
+  <%end%>
+  <% if @filter_archived_only %>
+    <%= link_to 'Show unarchived', vendor_orders_path(filter_archived_only: false), class: 'btn btn-primary btn-xs' %>
+  <%else%>
+    <%= link_to 'Show archived', vendor_orders_path(filter_archived_only: true), class: 'btn btn-primary btn-xs' %>
+  <%end%>
+<%end%>
+</p>
+
+<table class="table table-condensed">
+  <thead>
+    <tr>
+      <th>Order date</th>
+      <th>Product</th>
+    <% if is_vendor? %>
+      <th>Buyer</th>
+    <%else%>
+      <th>Vendor</th>
+    <%end%>
+      <th>Status</th>
+      <th>Feedback</th>
+      <th>Total quantity</th>
+      <th>Price (<%= current_user.currency %>)</th>
+      <th>Pay Price</th>
+    <% if is_vendor? %>
+      <th>Payout</th>
+    <%end%>
+      <th colspan="1"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @orders.each do |order| %>
+      <tr>
+        <td class="nowrap"><%= order.created_at.in_time_zone(current_user.timezone).strftime('%F') %></td>
+        <td>
+          <%= order.title %>
+        </td>
+      <% if is_vendor? %>
+        <td><%= link_to truncate(order.buyer.displayname, length:15), profile_path(order.buyer) %></td>
+      <%else%>
+        <td><%= link_to truncate(order.vendor.displayname, length:15), profile_path(order.vendor) %></td>
+      <%end%>
+        <td>
+          <% labeltype = (order.status == Order::EXPIRED) ? 'warning' : 'primary' %>
+          <span class="label label-<%=labeltype%>"><%= order.status %></span>
+          <%if order.locked %>
+            <p><span class="label label-danger">locked</span></p>
+          <%end%>
+          <% if is_vendor? && order.status == Order::PAID && order.unseen == 1 %>
+            <span class="badge">new</span>
+          <%end%>
+          <% if order.status == Order::PAYMENT_PENDING && !order.stock_available? %>
+            <p><span class="label label-warning">insufficient stock</span></p>
+          <%end%>
+          <% if order.status == Order::SHIPPED %>
+            <p class="small"><%= order.dispatched_on.in_time_zone(current_user.timezone).strftime('%F') %></p>
+          <%end%>
+        </td>
+        <td>
+          <% if order.allow_feedback_submission? %>
+            <% unless order.feedbacks.find_by(placedby: current_user) %>
+              <%= link_to 'Submit feedback', new_feedback_path(order: order.id) %></br>
+            <%end%>
+
+            <% if f = order.feedbacks.find_by(placedon: current_user) %>
+              <%= truncate(f.feedback, length: 20, separator: ' ') %>
+            <%end%>
+          <%else%>
+            n/a
+          <%end%>
+        </td>
+        <td><%= "%g" % order.total_quantity %> <%=order.product.unitdesc%></td>
+        <td class="nowrap align-right"><%= currency_format(order.total_price_in_currency(current_user.currency)) %> &nbsp;</td><%# Price ([in users currency]) %>
+        <td class="nowrap align-right"><%= order.btc_price %> <%=image_tag("#{order.payment_method.name.downcase}.svg", class: "small_logo", width: "16", height: "16")%></td><%# Pay price %>
+      <% if is_vendor? %>
+        <td>
+          <% if order.vendor_payout %>
+            <% if order.vendor_payout.paid %>
+              paid
+            <%elsif order.vendor_payout.btc_address %>
+              pending
+            <%else%>
+              no address set
+            <%end%>
+          <%else%>
+            n/a
+          <%end%>
+        </td>
+      <%end%>
+      <% if is_vendor? %>
+        <td class="nowrap align-right">
+          <%# Historically all action buttons were only on the order show screen but to make order processing easier for vendor, they were duplicated to the index screen. %>
+          <%# No accept button here because you need to view the order and look at postage details before accepting. %>
+          <% if order.status == Order::ACCEPTED %>
+            <%= form_for([:vendor, order], method: 'post', url: vendor_ship_order_path(order, return_to_index: true), html: { class: 'inline' }) do |f| %>
+              <%= f.submit 'Ship', class: 'btn btn-secondary btn-sm' %>
+            <% end %>
+          <%end%>
+          <% if order.allow_archive? && !order.archived_by_vendor %>
+            <%= form_for([:vendor, order], method: 'post', url: vendor_archive_order_path(order, return_to_index: true), html: { class: 'inline' }) do |f| %>
+              <%= f.submit 'Archive', class: 'btn btn-info btn-sm' %>
+            <% end %>
+          <%end%>
+          <% if order.archived_by_vendor %>
+            <%= form_for([:vendor, order], method: 'post', url: vendor_unarchive_order_path(order), html: { class: 'inline' }) do |f| %>
+              <%= f.submit 'Unarchive', class: 'btn btn-info btn-sm' %>
+            <% end %>
+          <%end%>
+          <%= link_to 'Details', vendor_order_path(order), class: "btn btn-primary btn-sm" %>
+        </td>
+      <%else%><%# buyer %>
+        <td class="nowrap align-right">
+          <% if [Order::ACCEPTED, Order::SHIPPED].include? order.status %>
+             <%= link_to 'Finalize', finalize_confirm_order_path(order), class: 'btn btn-success btn-sm' %>
+          <% end %>
+        </td>
+        <td><%= link_to 'Details', order, class: "btn btn-primary btn-sm" %></td>
+      <%end%>
+      </tr>
+    <% end %>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="10" class="align-right nowrap">Order count: <%=@orders_count%></td></tr>
+  </tfoot>
+</table>
+<%= paginate @orders %>

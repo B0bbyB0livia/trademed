@@ -1,0 +1,46 @@
+<h3>Messages: <%=@user.displayname%></h3>
+
+<p>
+The message list in this table is exactly what the specified user will see in their views. So if they have deleted messages (references)
+then admin will not be able to see the deleted messages either.
+</p>
+
+
+<table class="table">
+  <thead>
+    <tr>
+      <th><%= @user.vendor ? "Buyer name" : "Vendor name" %></th>
+      <th>New messages</th>
+      <th>Message count</th>
+      <th>Last sent/received</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @conversations.each do |conversation| %>
+      <tr>
+        <td><%= conversation.otherparty.displayname %></td>
+        <td>
+            <%= conversation.unseen_cnt %>
+        </td>
+        <td><%= conversation.cnt %></td>
+        <td><%= conversation.newest_message_date.in_time_zone(admin_user.timezone).strftime('%F') %></td>
+        <td>
+          <%= link_to 'View', admin_show_conversation_path(@user, conversation.otherparty), class: 'btn btn-primary' %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h4>Summary of all prior converstations</h4>
+<p>
+To view messages where all references have been deleted, this list is every user ever sent to or received from.
+The list of usernames in the above table is a subset of users in this list.
+</p>
+<ul>
+<% @parties.each do |party| %>
+  <li><%= link_to party.displayname, admin_show_conversation_path(@user, party) %></li>
+<%end%>
+</ul>

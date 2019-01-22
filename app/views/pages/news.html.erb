@@ -1,0 +1,15 @@
+<div class="row">
+<div class="col-md-12">
+  <h3>News archive</h3>
+  <table class="table">
+  <% NewsPost.sort_by_post_date.each do |post| %>
+    <%# nil.try always returns nil. in_time_zone(nil) gives UTC. so when visitor not logged in they get UTC time. %>
+    <tr>
+      <td class="news_date nowrap"><%=post.post_date.in_time_zone(current_user.try(:timezone)).strftime('%F') %></td>
+      <td><%=simple_format h(post.message)%></td>
+    </tr>
+  <%end%>
+  </table>
+
+</div>
+</div>

@@ -1,0 +1,159 @@
+<h3>Edit account / profile</h3>
+
+<%= form_for(@user, :html => { multipart: true, class: 'form-horizontal'}) do |f| %>
+  <%= render partial: 'form_errors', locals: { what: @user } %>
+
+  <h3>Account Settings:</h3>
+  <div class="form-group">
+    <%= f.label :currency, "Display currency", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.select(:currency, Rails.configuration.currencies, {}, class: 'form-control') %>
+    <p class="help-block">Display product prices in this currency.</p>
+    </div>
+  </div>
+  <div class="form-group">
+    <%= f.label :timezone, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.time_zone_select(:timezone, nil, {}, class: 'form-control') %>
+    <p class="help-block">Display times in your specified timezone.</p>
+    </div>
+  </div>
+
+  <%# Implement automatic payments for vendors only. Buyers don't really need this feature for refunds. %>
+  <% if is_vendor? %>
+       <div class="form-group">
+         <%= f.label :payout_btc_address, 'Pay BTC to', class: 'col-sm-2 control-label' %>
+         <div class="col-sm-7">
+           <%= f.text_field :payout_btc_address, class: 'form-control' %>
+           <p class="help-block">
+             When bitcoin orders finalized, this address will be automatically set on the order.
+           </p>
+           <p class="help-block">
+             If this field is empty, you must manually set your payment address on each finalized bitcoin order.
+           </p>
+         </div>
+       </div>
+       <% if PaymentMethod.litecoin_exists? %>
+         <div class="form-group">
+           <%= f.label :payout_ltc_address, 'Pay LTC to', class: 'col-sm-2 control-label' %>
+           <div class="col-sm-7">
+             <%= f.text_field :payout_ltc_address, class: 'form-control' %>
+             <p class="help-block">
+               Works the same as for bitcoin orders by automatically assigning payment address to order.
+               <b>Be careful not to enter a bitcoin address in this field</b>.
+             </p>
+             <p class="help-block">
+               If this field is empty, you must manually set your payment address on each finalized litecoin order.
+             </p>
+           </div>
+         </div>
+       <%end%>
+
+       <div class="form-group">
+         <span class="col-sm-2 control-label"><strong>Payout Schedule</strong></span>
+         <div class="col-sm-7">
+         <% (0..6).each do |i| %>
+           <div class="checkbox">
+             <label>
+             <%= f.check_box(:payout_schedule,  { :multiple => true }, i, nil) %> <%= Date::DAYNAMES[i] %>
+             </label>
+           </div>
+         <% end %>
+         <p class="help-block">
+           The payout schedule allows the vendor to restrict which days their bitcoin payments will be sent to them.
+           For example, setting the schedule to Sunday only will result in a single payment on Sunday of all bitcoin owing to you from finalized orders.
+         </p>
+         </div>
+       </div>
+
+       <div class="form-group">
+         <%= f.label :vacation, 'Vacation mode', class: 'col-sm-2 control-label' %>
+         <div class="col-sm-7">
+         <%= f.check_box(:vacation, class: 'checkbox') %>
+         <p class="help-block">Disables sales of all your products. Products will remain in listings.</p>
+         </div>
+       </div>
+  <%end%>
+
+  <h3>Profile Settings:</h3>
+  <%# Only let vendors have images in their profile to minimize attack surface. %>
+  <% if is_vendor? %>
+    <div class="form-group space-below">
+      <%= f.label :avatar, "Profile logo", class: 'col-sm-2 control-label' %>
+      <div class="col-sm-7">
+      <%= image_tag @user.avatar.url(:thumb), class: 'thumbnail', alt: 'profile image' %>
+      <%= f.file_field :avatar %>
+      <p class="help-block">Max size 2MB, gif, jpeg, png. The server will strip exif but it is safer to remove exif yourself before upload.</p>
+      <% if @user.avatar_file_name %>
+        <div>
+          <%= check_box_tag('delete_avatar', 'yes', false) %> Delete profile logo
+        </div>
+      <%end%>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="form-group">
+    <%= f.label :displayname, "Display name", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :displayname, readonly: true, class: 'form-control' %>
+    </div>
+  </div>
+  <div class="form-group">
+    <%= f.label :profile, "Profile", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-9">
+    <%= f.text_area :profile, rows: 10, class: 'form-control' %>
+    <% if is_vendor? %>
+      <p class="help-block">About vendor, products and policies such as refund policy</p>
+    <%end%>
+    </div>
+  </div>
+  <div class="form-group">
+    <%= f.label :publickey, "Public key", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-9">
+      <p>
+      <small>
+        <%= simple_format h(Gpgkeyinfo.read_key(@user.publickey)) %>
+      </small>
+      </p>
+
+    <p>
+    <%= f.text_area :publickey, rows: 10, class: 'form-control' %>
+    </p>
+    <% if Rails.configuration.enable_mandatory_pgp_user_accounts %>
+      <p class="help-block">Public key is mandatory.</p>
+    <%end%>
+    </div>
+  </div>
+
+  <% if @user.pgp_2fa %>
+
+    <div class="form-group">
+      <span class="col-sm-2 control-label"><strong>PGP 2FA</strong></span>
+      <div class="col-sm-7">
+        <p>
+        <textarea readonly rows="12" class="form-control pgp-textarea">
+<%= @gpg_msg %>
+        </textarea>
+        </p>
+        <p class="help-block">
+          You have PGP 2FA enabled. Account and profile setting changes require you to decrypt this message to authorize any changes.
+        </p>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <%= label_tag :secret_word, "Decrypted word", class: 'col-sm-2 control-label' %>
+      <div class="col-sm-7">
+      <%= text_field_tag :secret_word, nil, class: 'form-control' %>
+      </div>
+    </div>
+
+  <%end%>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit "Save settings", id: 'submit', class: 'btn btn-primary form-button' %>
+  </div>
+  </div>
+<% end %>

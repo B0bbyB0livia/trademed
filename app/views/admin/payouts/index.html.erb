@@ -1,0 +1,116 @@
+<h3>Payouts</h3>
+
+<p>Long field values such as ids, txids, bitcoin addresses are truncated in this view.</p>
+<p>
+  The <b>Updated</b> timestamp describes either
+  <ol>
+    <li>When payout last updated by an import from market (payout address or payout schedule was updated by the user).</li>
+    <li>When payout was paid.</li>
+    <li>When payout confirmed attribute was set true.</li>
+  </ol>
+
+  <%# When market updated with txid, the payouts updated_at does not change because its market_updated field is set by update_all(). %>
+</p>
+
+<p>
+Empty txid means payout has not yet been paid.
+</p>
+<p>
+Conf column means it has had at least one confirmation.
+</p>
+
+<p>
+<b>Schedule</b> and <b>Payout address</b> will be colorized when not yet paid. This helps the admin when manually reviewing payouts.
+Schedule field will be green if schedule evaluates to ready right now.
+Payout address shows in orange when a new address is being used for the first time by that user.
+</p>
+
+<table class="table table-condensed">
+ <thead>
+   <tr>
+     <th>Created at</th>
+     <th>Order id</th>
+     <th>Order created at</th>
+     <th>Displayname</th>
+     <th>Order price</th>
+     <th>Payout amount</th>
+     <th>Payout address</th>
+     <th>Schedule</th>
+     <th>Updated</th>
+     <th>txid &amp; fee</th>
+     <th>Market updated</th>
+     <th>Conf</th>
+     <th colspan="1"></th>
+   </tr>
+ </thead>
+ <tbody>
+   <% @payouts.each do |payout| %>
+     <tr>
+       <td class="small nowrap"><%=payout.created_at.in_time_zone(admin_user.timezone).to_s(:FHMnozone) %></td>
+       <td class="small"><%=payout.order_id[/\w+/] %></td>
+       <td class="small nowrap"><%=payout.order_created.in_time_zone(admin_user.timezone).strftime('%F') %></td>
+       <td class="nowrap">
+         <%=payout.displayname%>
+         <% if payout.payout_type == 'buyer' %>
+           <b>(refund)</b>
+         <%end%>
+         <% if payout.hold %>
+           <span class="orange_text">(on hold)</span>
+         <%end%>
+       </td>
+       <td><%=payout.order_btc_price%></td>
+       <td><%=payout.payout_btc_amount%></td>
+       <%
+         # A lot of conditions because the data is only available for users paid in the past at least once.
+         if !payout.paid && @past_paid_addresses.has_key?(payout.username) && @past_paid_addresses[payout.username].include?(payout.payout_btc_address) == false
+           address_class = "orange_text"
+         else
+           address_class = ""
+         end
+       %>
+       <td class="small <%=address_class%>">
+         <%=payout.payout_btc_address[0..10]%>
+       </td>
+       <%
+         schedule_class = ""
+         if payout.payout_type == 'vendor' && !payout.paid && payout.payout_schedule
+           Time.zone = payout.user_timezone
+           weekday = Time.zone.now.wday
+           if payout.payout_schedule.include?(weekday)
+             schedule_class = "green_text"
+           end
+         end
+       %>
+       <td class="small <%=schedule_class%>">
+         <% if payout.payout_type == 'buyer' %>
+           n/a
+         <%else%>
+           <%= payout.payout_schedule.to_s.gsub(/\s/, '') %>
+           <%= payout.user_timezone %>
+         <%end%>
+       </td>
+       <td class="nowrap"><%=payout.updated_at.in_time_zone(admin_user.timezone).strftime('%F') %></td>
+       <td class="nowrap small">
+         <% if payout.txid %>
+           <%=payout.txid[0..10]%>
+         <% end %>
+         <% if payout.fee %>
+           (<%= (payout.fee.to_f / payout.vsize).round(1) %>)
+         <% end %>
+       </td>
+       <td>
+         <% if payout.market_updated %>
+           <%=image_tag('checkmark.svg')%>
+         <%end%>
+       </td>
+       <td>
+         <% if payout.confirmed %>
+           <%=image_tag('checkmark.svg')%>
+         <%end%>
+       </td>
+       <td><%=link_to 'Details', admin_payout_path(payout), class: "btn btn-sm btn-primary" %></td>
+     </tr>
+   <% end %>
+ </tbody>
+</table>
+<%= paginate @payouts %>

@@ -1,0 +1,148 @@
+<% if is_admin? %>
+  <div class="alert alert-warning">
+    Some links may not work when viewing as admin.
+  </div>
+<%end%>
+
+<%# Public profile for vendor/buyer %>
+<div class="row">
+<div class="col-md-9">
+<h3><%= @user.is_vendor? ? "Vendor" : "Buyer" %> profile for <%= @user.displayname %></h3>
+
+<% if @user.is_vendor? %>
+  <p>
+  <%= image_tag @user.avatar.url(:medium), class: 'thumbnail', alt: 'profile image' %>
+  </p>
+<% end %>
+
+<% unless @user == session_user %>
+  <p>
+    <%= link_to "Send message", show_conversation_path(@user), id: 'send_message_link', class: 'btn btn-primary' %>
+  </p>
+<% end %>
+
+<% if @user.is_vendor? %>
+  <p>
+    <% product_count = @user.products.listable.count %>
+    <%= link_to "Product list (#{product_count})", products_path(vendor_id: @user.id), class: 'btn btn-default' %>
+  </p>
+<%end%>
+
+<% feedback_count = Feedback.where(placedon_id: @user.id).count %>
+<% if @user.is_vendor? || feedback_count > 0 %>
+  <p>
+    <%= link_to "Feedback (#{feedback_count})", feedbacks_path(user_id: @user.id), id: 'feedback_link', class: 'btn btn-default' %>
+  </p>
+<%end%>
+
+<h4>Profile</h4>
+<% if @user.profile.empty? %>
+  No profile details saved.
+<% else %>
+  <%= simple_format h(@user.profile) %>
+<% end %>
+
+<h4>Public key</h4>
+
+<p>
+<small>
+<pre>
+<%= Gpgkeyinfo.read_key(@user.publickey) %>
+</pre>
+</small>
+</p>
+
+<p>
+To copy, click text box and press
+<kbd>ctrl a</kbd>
+<kbd>ctrl c</kbd>
+</p>
+<p>
+<textarea readonly rows="10" class="form-control pgp-textarea">
+<%= @user.publickey %>
+</textarea>
+</p>
+
+<h4>Stats</h4>
+
+<dl class="dl-horizontal">
+  <dt>Registered since</dt>
+  <dd><%= time_ago_in_words(@user.created_at) %> ago</dd>
+
+  <dt>Last seen online</dt>
+  <dd><%= lastseen_to_current_users_timezone(@user.lastseen) %></dd>
+
+  <dt>Finalized orders</dt>
+  <dd>
+    <% if @user.is_vendor? %>
+      <%= @user.received_orders.finalized_and_autofinalized.count %>
+      from
+      <%= @user.received_orders.select('distinct buyer_id').finalized_and_autofinalized.count %>
+      buyers
+    <%else%>
+      <%= @user.placed_orders.finalized_and_autofinalized.count %>
+      from
+      <%= @user.placed_orders.select('distinct vendor_id').finalized_and_autofinalized.count %>
+      vendors. Of those <%= @user.placed_orders.autofinalized.count %> were autofinalized.
+    <%end%>
+  </dd>
+
+  <% if !@user.is_vendor? %>
+    <dt>Expired orders</dt>
+    <dd>
+      <%= @user.placed_orders.where(status: Order::EXPIRED).count %> orders did not receive payment before expiry time.
+    </dd>
+  <% end %>
+
+  <% if @user.is_vendor? %>
+    <dt>Total sales</dt>
+      <dd>
+        <%= number_to_range(
+              @user.received_orders.finalized_and_autofinalized.to_a.sum {|o| o.total_price_in_currency(session_user.currency)} ,
+              Rails.configuration.price_ranges) %>
+        <%=session_user.currency%>
+      </dd>
+    <dt>Vacation mode</dt><dd><%=@user.vacation ? 'Yes. Sales currently disabled.' : 'No' %></dd>
+  <%else%>
+    <dt>Total spent</dt>
+      <dd>
+        <%= number_to_range(
+              @user.placed_orders.finalized_and_autofinalized.to_a.sum {|o| o.total_price_in_currency(session_user.currency)} ,
+              Rails.configuration.price_ranges) %>
+        <%=session_user.currency%>
+      </dd>
+  <%end%>
+</dl>
+
+<% if @user.is_vendor? %>
+  <h4>Current orders</h4>
+  <dl class="dl-horizontal">
+    <dt>paid</dt><dd><%=@user.received_orders.paid.count%></dd>
+    <dt>accepted</dt><dd><%=@user.received_orders.accepted.count%></dd>
+    <dt>shipped</dt><dd><%=@user.received_orders.shipped.count%></dd>
+  </dl>
+  <h4>Finalized orders</h4>
+  <dl class="dl-horizontal">
+    <dt>Last 24 hours</dt><dd><%=@user.received_orders.finalized.where('finalized_at > ?', Time.now - 1.days).count%></dd>
+    <dt>Last 48 hours</dt><dd><%=@user.received_orders.finalized.where('finalized_at > ?', Time.now - 2.days).count%></dd>
+    <dt>Last 7 days</dt>    <dd><%=@user.received_orders.finalized.where('finalized_at > ?', Time.now - 7.days).count%></dd>
+    <dt>Last finalized date</dt><dd><%=@last_finalized_order ? @last_finalized_order.finalized_at.in_time_zone(session_user.timezone).to_s(:FHM) : 'none' %></dd>
+  </dl>
+<%end%>
+
+<%# If vendor viewing a buyer profile, show the number of sales that vendor made to buyer. %>
+<% if !is_admin? && !@user.is_vendor? && session_user.is_vendor? %>
+  This customer has placed <%=@user.placed_orders.after_paid.where(vendor: session_user).count%> paid orders with you before.
+<%end%>
+
+</div><%# col-md-9 %>
+
+<div class="col-md-3">
+ <div class="pull-right">
+  <% if @user == session_user %>
+   <%= link_to 'Edit profile', account_edit_path, class: "btn btn-default" %>
+  <%end%>
+ </div>
+</div>
+
+</div><%# row %>

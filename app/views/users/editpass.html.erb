@@ -1,0 +1,32 @@
+<h3>Change password</h3>
+
+<%= form_for(@user, url: {action: "updatepass"}, html: {class: 'form-horizontal'}) do |f| %>
+  <%= render partial: 'form_errors', locals: { what: @user } %>
+
+  <div class="form-group">
+    <%= f.label :oldpassword, "Current password", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.password_field :oldpassword, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :password, "New password", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.password_field :password, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :password_confirmation, "Confirm password", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.password_field :password_confirmation, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit "Change", id: 'submit', class: 'btn btn-default' %>
+  </div>
+  </div>
+<% end %>

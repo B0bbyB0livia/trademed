@@ -1,0 +1,100 @@
+<h3>Register new account</h3>
+
+<%= form_for(@user, html: {class: 'form-horizontal'}) do |f| %>
+  <%= render partial: 'form_errors', locals: { what: @user } %>
+
+  <div class="form-group">
+    <%= f.label :username, "Username", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :username, class: 'form-control' %>
+    <p class="help-block">Username is only used for login and remains secret. Save this in your password manager.</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :displayname, "Display name", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :displayname, class: 'form-control' %>
+    <p class="help-block">
+      Displayname is what other users see in messaging and product listings.
+      It cannot be changed after the account is created. Must be different to username for security reasons.
+    </p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :password, "Password", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.password_field :password, class: 'form-control' %>
+    <p class="help-block">Minimum 8 characters.</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :password_confirmation, "Confirm password", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.password_field :password_confirmation, class: 'form-control' %>
+    </div>
+  </div>
+
+<% if Rails.configuration.enable_mandatory_pgp_user_accounts %>
+  <div class="form-group">
+    <%= f.label :publickey, "Public key", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-9">
+    <%= f.text_area :publickey, rows: 10, class: 'form-control' %>
+    <p class="help-block">PGP public key is mandatory.</p>
+    </div>
+  </div>
+<% end %>
+
+  <div class="form-group">
+    <%= f.label :currency, "Display currency", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.select(:currency, Rails.configuration.currencies, {}, class: 'form-control') %>
+    <p class="help-block">Display product prices in this currency.</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :timezone, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.time_zone_select(:timezone, nil, {}, class: 'form-control') %>
+    <p class="help-block">Display times in your specified timezone.</p>
+    </div>
+  </div>
+
+<% if Rails.configuration.enable_vendor_registration_form %>
+  <div class="form-group">
+    <%= f.label :vendor, "Vendor account", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.check_box :vendor, id: 'vendor', class: 'checkbox' %>
+    <p class="help-block">Vendor accounts can list products but cannot make purchases.</p>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <%= label_tag :vendor_code, "Vendor signup code", class: 'col-sm-2 control-label' %>
+    <div class="col-sm-7">
+    <%= text_field_tag :vendor_code, nil, class: 'form-control' %>
+    <p class="help-block">You must obtain a signup code and enter it here to create a vendor account.</p>
+    </div>
+  </div>
+<% end %>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+<div class="">CAPTCHA question:</div>
+<%= f.label :humanizer_answer, @user.humanizer_question, class: '' %>
+<%= f.text_field :humanizer_answer, class: 'form-control' %>
+  </div>
+  </div>
+
+<%= f.hidden_field :humanizer_question_id %>
+
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4">
+    <%= f.submit "Create", id: 'submit', class: 'btn btn-primary' %>
+  </div>
+  </div>
+<% end %>

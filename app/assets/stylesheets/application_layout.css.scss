@@ -1,0 +1,206 @@
+@import "bootstrap-sprockets";
+@import "bootstrap";
+
+.faceimage {
+  padding-right: 1em;
+  padding-left: 1em;
+}
+
+// Bootstrap uses has-error class to show form field errors. Rails automatically wraps the
+// error fields with a div class=field_with_errors. So this applies the bootstrap styling to rails error fields.
+.field_with_errors {
+  @extend .has-error;
+}
+
+.pgp-textarea {
+  font-size: x-small;
+}
+
+// To give some space after form fields between submit button.
+.form-button {
+  margin-top: 30px;
+}
+
+.space-below {
+  margin-bottom: 30px;
+}
+
+// Not really sure how this css works exactly. see http://jsfiddle.net/kumarmuthaliar/GG9Sa/1/
+// It is used to do confirmation dialog boxes.
+.modalDialog {
+    display:block;  // all modalDialogs have hidden attribute set to prevent Firefox briefly showing them before css loaded. This overrides hidden.
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 99999;
+    opacity:0;
+    -webkit-transition: opacity 400ms ease-in;
+    -moz-transition: opacity 400ms ease-in;
+    transition: opacity 400ms ease-in;
+    pointer-events: none;
+}
+.modalDialog:target {
+    opacity:1;
+    pointer-events: auto;
+}
+.modalDialog > div {
+    width: 500px;
+    position: relative;
+    margin: 10% auto;
+    padding: 5px 20px 13px 20px;
+    border-radius: 10px;
+    background: #fff;
+    background: -moz-linear-gradient(#fff, #999);
+    background: -webkit-linear-gradient(#fff, #999);
+    background: -o-linear-gradient(#fff, #999);
+}
+.close {
+    background: #606061;
+    color: #FFFFFF;
+    line-height: 25px;
+    position: absolute;
+    right: -12px;
+    text-align: center;
+    top: -10px;
+    width: 24px;
+    text-decoration: none;
+    font-weight: bold;
+    -webkit-border-radius: 12px;
+    -moz-border-radius: 12px;
+    border-radius: 12px;
+    -moz-box-shadow: 1px 1px 3px #000;
+    -webkit-box-shadow: 1px 1px 3px #000;
+    box-shadow: 1px 1px 3px #000;
+}
+.close:hover {
+    background: #00d9ff;
+}
+
+.daygroupdate {
+  font-size: small;
+  text-align: right;
+}
+.daygroup {
+  padding-top:3px;
+  padding-bottom:2em;
+}
+.message {
+  border-radius:4px;
+  border:1px solid #bbb;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  padding: 0 10px 0 10px;
+}
+.message.plaintext {
+  white-space: pre-wrap; // Newlines in message preserved instead of collapsing.
+}
+.message.sent {
+  background-color: #b4e1ef;
+}
+.message.received {
+  background-color: #f4c385;
+}
+.encrypted {
+  @extend .small;
+  white-space: pre-wrap;
+  word-wrap: break-word;   // Stops long lines running outside box by wrapping for display. But copy/paste returns correct text.
+  font-family: monospace;
+}
+.inline {
+  display: inline;
+}
+.display_none {
+  display: none;
+}
+.footer {
+  padding: 50px;
+}
+td.nowrap {
+  white-space: nowrap;
+}
+.product_feedback {
+  padding-top: 1em;
+}
+table.align-right, td.align-right, th.align-right {
+  text-align: right;
+}
+.main {
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  border-color: #ddd;
+  margin-bottom: 200px;
+  padding-bottom: 20px;
+}
+table.productindex td {
+  padding-top: 15px;
+  padding-bottom: 30px;
+}
+table.productindex tr.product {
+  border-bottom: solid;
+  border-width: 1px;
+  border-color: #ddd;
+}
+table.productindex tr:last-child {
+  border-bottom: none;
+}
+td.details {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+// Apparently in firefox breaking long words with css doesn't work in tables unless "table-layout: fixed;"
+// The code finds long words that would cause overflow and wraps them in a div with this class. break-all breaks
+// all words even small ones so the class is only applied to long strings. Also Firefox requires it to be a div , not a span.
+.word_break {
+  word-break: break-all;
+}
+td.align-top {
+  vertical-align: top;
+}
+#flashcontainer {
+  margin-top: 15px;
+}
+table.unitprices td {
+  padding-top: 0px !important;
+  padding-left: 15px !important;
+}
+.leftpanel {
+  padding-left: 0px !important;
+}
+.news_date {
+  width: 205px;
+}
+
+// img tags already define width and height as workaround for Firefox rendering these images really large briefly before it loads css.
+// Often screen would be filled with giant bitcoin svg for a few tenths of a second.
+.small_logo {
+  width: 16px;
+  height: 16px;
+}
+.medium_logo {
+  width: 45px;
+  height: 45px;
+}
+h5.escrow {
+  //background: #e2e6ea;
+  //background: #dae0e5;
+  background: #f8f9fa;
+  border-color: #e2e6ea;
+  border-width: 1px;
+  border-style: solid;
+  width: 80px;
+}
+p.warn {
+  color: red;
+  font-weight: bold;
+}
+
+// Optional header banner image.
+//.backgroundimg {
+//    background-image: image-url("banner.jpg");
+//    background-repeat: no-repeat;
+//    margin-bottom: 10px;
+//}

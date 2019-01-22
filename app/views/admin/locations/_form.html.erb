@@ -1,0 +1,18 @@
+<%= form_for([:admin, @location] , :html => { class: 'form-horizontal' }) do |f| %>
+
+  <%= render partial: 'form_errors', locals: { what: @location } %>
+
+  <div class="form-group">
+    <%= f.label :description, class: 'col-sm-2 control-label' %>
+    <div class="col-sm-4">
+    <%= f.text_field :description, class: 'form-control' %>
+    </div>
+  </div>
+
+  <div class="form-group">
+  <div class="col-sm-offset-2 col-sm-4 form-button">
+    <%= f.submit class: 'btn btn-primary' %>
+  </div>
+  </div>
+
+<% end %>

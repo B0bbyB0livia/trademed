@@ -1,0 +1,29 @@
+<div>
+<% if is_vendor? %>
+  <div class="alert alert-info">
+    Vendors can view but cannot make purchases.
+    <% if @product.vendor == current_user %>
+      <%= link_to 'Click this link for vendor product view', vendor_product_path(@product) %>.
+    <%end%>
+  </div>
+<% end %>
+
+<% if @product.allow_purchase? == false %>
+  <div class="alert alert-warning" role="alert">This product is not currently available to order, because sales have been disabled by vendor or else no stock.</div>
+<%end%>
+</div>
+
+<%= render partial: 'product', object: @product %>
+
+<p>
+  <% feedback_count = @product.vendor_feedbacks.count %>
+  <%= link_to "Feedback (#{feedback_count})", feedbacks_path(product_id: @product.id), class: 'btn btn-default' %>
+</p>
+
+<p>
+<% if @product.allow_purchase? == false || is_vendor? %>
+  <%= link_to 'Purchase', new_order_path(product: @product.id), class: 'btn btn-primary form-button disabled' %>
+<%else%>
+  <%= link_to 'Purchase', new_order_path(product: @product.id), class: 'btn btn-primary form-button' %>
+<%end%>
+</p>

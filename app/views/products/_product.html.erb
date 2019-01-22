@@ -1,0 +1,115 @@
+<h3><%= product.title %></h3>
+<div>
+<div class="media">
+  <div class="media-left">
+    <div class="productimage">
+       <% if product.image_set_array.empty? %>
+          <%# Display a single image placeholder if no images defined. %>
+          <%= image_tag(product.image1.url(:medium), alt: 'product placeholder', class: "thumbnail") %>
+       <%else%>
+         <% product.image_set_array.each do |i| %>
+           <%= link_to( image_tag(product.method("image#{i}").call.url(:medium), alt: "product picture#{i}", class: "thumbnail"),
+                        product.method("image#{i}").call.url(:large) ) %>
+         <%end%>
+      <%end%>
+    </div>
+  </div>
+  <div class="media-body">
+
+    <div class="row">
+      <div class="col-md-3">
+        <strong>Vendor</strong>
+      </div>
+      <div class="col-md-9">
+        <%= link_to product.vendor.displayname, profile_path(product.vendor) %>
+      </div>
+    </div>
+
+    <p></p>
+
+    <div class="row">
+      <div class="col-md-3">
+        <strong>Stock</strong>
+      </div>
+      <div class="col-md-9">
+        <%= sprintf("%g", product.stock) %>
+        <%= product.unitdesc %>
+      </div>
+    </div>
+
+    <p></p>
+
+    <div class="row">
+      <div class="col-md-3">
+        <strong>Category</strong>
+      </div>
+      <div class="col-md-9">
+        <%= product.category.name %>
+      </div>
+    </div>
+
+    <% if product.fe_enabled %>
+      <p></p>
+      <div class="row">
+        <div class="col-md-3">
+          <strong>Escrow</strong>
+        </div>
+        <div class="col-md-9">
+          No (Finalize early required)
+        </div>
+      </div>
+    <%end%>
+
+  </div>
+</div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <p class="panel-title">Description</p>
+  </div>
+  <div class="panel-body">
+    <%= simple_format h(product.description) %>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <p class="panel-title">Prices</p>
+  </div>
+  <div class="panel-body">
+    <%= render partial: 'products/unitprices', locals: {product: product, show_price_per_unit: true} %>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <p class="panel-title">Shipping</p>
+  </div>
+  <div class="panel-body">
+    <div class="row">
+      <div class="col-md-6">
+        <%= render partial: 'products/shippingoptions', locals: {product: product} %>
+      </div>
+      <div class="col-md-6">
+        <p>
+        <strong>Ships from:</strong> <%= product.from_location.description %>
+        </p>
+        <p>
+        <strong>Ships to:</strong> <%= product.locations.order(:description).collect{|loc| loc.description}.join(', ') %>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <p class="panel-title">Payment methods available</p>
+  </div>
+  <div class="panel-body">
+    <%product.payment_methods.each do |pm|%>
+      <%=image_tag("#{pm.name.downcase}.svg", alt: pm.name, class: "medium_logo")%>
+    <%end%>
+  </div>
+</div>

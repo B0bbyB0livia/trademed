@@ -1,0 +1,62 @@
+<h3>Support</h3>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Title</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @tickets.each do |ticket| %>
+      <tr>
+        <td><%= ticket.created_at.in_time_zone(current_user.timezone).strftime('%F') %></td>
+        <td><%= ticket.title %></td>
+        <td>
+          <% labeltype = (ticket.status == 'closed') ? 'warning' : 'primary' %>
+          <span class="label label-<%=labeltype%>"><%= ticket.status %></span>
+          <% if ticket.ticket_messages.where(response_seen: false).count > 0 %>
+            <span class="badge">unseen</span>
+          <%end%>
+        </td>
+        <td>
+          <div class="pull-right">
+          <%= link_to 'Details', ticket, class: 'btn btn-primary btn-sm' %>
+          <%= link_to 'Delete', "#delete_#{ticket.id}", class: 'btn btn-danger btn-sm' %>
+          </div>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<p>
+<%= link_to 'Create ticket', new_ticket_path, class: 'btn btn-primary form-button' %>
+</p>
+<p>
+For questions about products, send a <%=link_to 'message', conversations_path %> to the product vendor.
+</p>
+<p>
+For encrypting support messages please use <%=link_to 'this key', publickey_path %>.
+</p>
+
+
+<% @tickets.each do |ticket| %>
+  <div id="delete_<%=ticket.id%>" class="modalDialog" hidden>
+    <div>
+     <a href="#close" title="Close" class="close"><span class="glyphicon glyphicon-remove"></span></a>
+
+     <h3>Confirm Delete</h3>
+     <p>Delete this ticket?</p>
+     <p>
+       <%= form_tag(ticket,  method: :delete) do %>
+         <%= submit_tag("Delete", class: 'btn btn-danger') %>
+         <%= link_to 'Cancel', '#close', class: 'btn btn-default' %>
+     <% end %>
+     </p>
+   </div>
+  </div>
+<% end %>
