@@ -74,10 +74,10 @@ Without bitcoind running, the market server will not be able update orders to pa
 
 Create a directory as the rails user to hold docker persistent volume mounts. These are to allow logs and images to be saved persistently.
 In this example we use /home/rails/docker/ but you can use any directory name.
-The log and public directory will be written to by the user ID inside the docker instance (should be ID 1000).
+The log and public/system directory will be written to by the user ID inside the docker instance (should be ID 1000).
 
 ```
-mkdir -p /home/rails/docker/{log,public}
+mkdir -p /home/rails/docker/{log,public/system}
 chmod 777 /home/rails/docker/*
 ```
 
@@ -213,10 +213,17 @@ Optional, default false if omitted.
 This option will require new accounts to have a PGP public key saved. It will also change the user registration form to have a PGP field.
 Optional, default false if omitted.
 
+`ENABLE_SUPPORT_TICKETS` -
+Optional, default no. This will display a support link in the navigation bar to a basic ticketing system.
+Admin users can only communicate with buyers and vendors using tickets. Admin users can't use messaging.
+Enable this when running a multi-vendor site.
+
 
 ### Initial starting the application (market)
 
-Run `docker-compose up` in the directory containing the docker-compose.yml file. This will start two docker instances - the application and the database instance.
+Verify the docker-compose.yml file using ```docker-compose config``` with the working directory being where the file is stored.
+
+Run `docker-compose up` in the same directory containing the docker-compose.yml file. This will start two docker instances - the application and the database instance.
 
 
 #### Setup the database

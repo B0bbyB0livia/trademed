@@ -44,7 +44,7 @@ See [INSTALL.md](INSTALL.md) for software requirements.
 
 * No bitcoin private wallet keys exists on the public web server.
 
-* Supports seqwit payment addresses or any format that bitcoind supports.
+* Supports segwit payment addresses or any format that bitcoind supports.
 
 * Product management with multiple pricing options per product, shipping options, automatic picture exif removal, up to three pictures.
 
@@ -89,7 +89,7 @@ See [INSTALL.md](INSTALL.md) for software requirements.
 * Support for multiple vendor accounts. The roles of being a vendor on the site and the site administrator are distinct.
   The administrator may operate the site for multiple vendors for configurable commission and provide escrow and dispute resolution services.
 
-* Vendors can list products a "no-escrow". This is for multi-vendor setups where the vendor wants to receive payment without waiting for the buyer to finalize.
+* Vendors can list products as "no-escrow". This is for multi-vendor setups where the vendor wants to receive payment without waiting for the buyer to finalize.
 
 
 ## Architecture

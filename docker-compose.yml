@@ -2,8 +2,8 @@
 # The commented sections are only applicable when configuring the market server.
 db:
   image: postgres
-    environment:
-      POSTGRES_PASSWORD: mysecretpassword
+  environment:
+    POSTGRES_PASSWORD: mysecretpassword
 trademed:
   image: trademed
   volumes:
@@ -33,8 +33,8 @@ trademed:
     BITCOIND_ORDERS_ACCOUNT_NAME: trademed_orders
 
     # Market only settings.
-    #DISPLAYNAME_HASH_SALT=xxxxxxx
-    #CURRENCIES=USD AUD EUR GBP CAD
+    #DISPLAYNAME_HASH_SALT: xxxxxxx
+    #CURRENCIES: USD AUD EUR GBP CAD
     #MARKET_BITCOIND_URI: http://bitcoinrpc:YOUR_RPC_PASSWORD_HERE@192.168.1.2:8332/
     #ENABLE_VENDOR_REGISTRATION_FORM: 'true'
     #ENABLE_MANDATORY_PGP_USER_ACCOUNTS: 'true'
