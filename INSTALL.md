@@ -238,7 +238,8 @@ docker run -it --rm postgres psql -h 172.17.0.2 -U postgres
 To avoid looking up the IP address of the database instance, use the link option to docker run. Example:
 
 ```
-docker run -it --rm --link trademed_db_1:db_host postgres psql -h db_host -U postgres
+# trademed_db_1 is the container name of the postgresql server currently running. Don't need to change anything else from this example.
+docker run -it --rm --link trademed_db_1:dbhost postgres psql -h dbhost -U postgres
 ```
 
 Once connected with psql, create a database user and give it the password from DATABASE_URL. If you are running multiple instances of trademed, the role name can be the same
