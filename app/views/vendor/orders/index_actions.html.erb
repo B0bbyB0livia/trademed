@@ -1,0 +1,98 @@
+<h3>Orders - actions view</h3>
+
+<p class="pull-right">
+  <% if @filter_paid %>
+    <%= link_to 'Show unpaid', vendor_orders_path(actions_view:true, filter_paid: false), class: 'btn btn-primary btn-xs' %>
+  <%else %>
+    <%= link_to 'Exclude unpaid', vendor_orders_path(actions_view:true, filter_paid: true), class: "btn btn-primary btn-xs #{@filter_archived_only ? 'disabled' : ''}" %>
+  <%end%>
+  <% if @filter_archived_only %>
+    <%= link_to 'Show unarchived', vendor_orders_path(actions_view:true, filter_archived_only: false), class: 'btn btn-primary btn-xs' %>
+  <%else%>
+    <%= link_to 'Show archived', vendor_orders_path(actions_view:true, filter_archived_only: true), class: 'btn btn-primary btn-xs' %>
+  <%end%>
+  <%= link_to 'Normal view', vendor_orders_path(filter_archived_only: @filter_archived_only, filter_paid: @filter_paid), class: 'btn btn-primary btn-xs' %>
+</p>
+
+<table class="table table-condensed">
+<%= form_tag(vendor_orders_actions_path(filter_archived_only: @filter_archived_only, filter_paid: @filter_paid)) do %>
+  <thead>
+    <tr>
+      <th>Order date</th>
+      <th>Product</th>
+      <th>Buyer</th>
+      <th>Status</th>
+      <th>Payout</th>
+      <th>accept</th>
+      <th>shipped</th>
+      <th>archive</th>
+      <th>delete</th>
+      <th colspan="1"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @orders.each do |order| %>
+      <tr>
+        <td class="nowrap"><%= order.created_at.in_time_zone(current_user.timezone).strftime('%F') %></td>
+        <td>
+          <%= order.title %>
+        </td>
+        <td><%= link_to truncate(order.buyer.displayname, length:15), profile_path(order.buyer) %></td>
+        <td>
+          <% labeltype = (order.status == Order::EXPIRED) ? 'warning' : 'primary' %>
+          <span class="label label-<%=labeltype%>"><%= order.status %></span>
+        </td>
+        <td>
+          <% if order.vendor_payout %>
+            <% if order.vendor_payout.paid %>
+              paid
+            <%elsif order.vendor_payout.btc_address %>
+              pending
+            <%else%>
+              no address set
+            <%end%>
+          <%else%>
+            n/a
+          <%end%>
+        </td>
+        <td>
+          <% if order.allow_accept? %>
+            <%= check_box_tag('accept_ids[]', order.id, false, class: 'checkbox') %>
+          <% end %>
+        </td>
+        <td>
+          <% if order.allow_shipped? %>
+            <%= check_box_tag('shipped_ids[]', order.id, false, class: 'checkbox') %>
+          <% end %>
+        </td>
+        <td>
+          <% if order.allow_vendor_archive? %>
+            <%= check_box_tag('archive_ids[]', order.id, false, class: 'checkbox') %>
+          <% end %>
+        </td>
+        <td>
+          <% if order.allow_vendor_delete? %>
+            <%= check_box_tag('delete_ids[]', order.id, false, class: 'checkbox') %>
+          <% end %>
+        </td>
+        <td class="nowrap align-right">
+          <%= link_to 'Details', vendor_order_path(order), class: "btn btn-default btn-sm" %>
+        </td>
+      </tr>
+    <%end%>
+
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="10" class="align-right nowrap">
+        Order count: <%=@orders_count%>
+        <p>
+          <%= submit_tag 'Apply actions', class: 'btn btn-primary form-button' %>
+          <p class="help-block">Actions are applied immediately, without confirmation.</p>
+        </p>
+      </td>
+    </tr>
+  </tfoot>
+<%end%><%# form_tag %>
+</table>

@@ -11,15 +11,16 @@
 <% if is_vendor? %>
   <% if @filter_paid %>
     <%= link_to 'Show unpaid', vendor_orders_path(filter_paid: false), class: 'btn btn-primary btn-xs' %>
-  <%elsif !@filter_archived_only %>
-    <%# 'Exclude unpaid' button appears on normal order list but not the archived order list. It is unlikely a vendor would have unpaid orders archived. %>
-    <%= link_to 'Exclude unpaid', vendor_orders_path(filter_paid: true), class: 'btn btn-primary btn-xs' %>
+  <%else%>
+    <%# 'Exclude unpaid' not applicable when viewing archived because they cannot be archived. %>
+    <%= link_to 'Exclude unpaid', vendor_orders_path(filter_paid: true), class: "btn btn-primary btn-xs #{@filter_archived_only ? 'disabled' : ''}" %>
   <%end%>
   <% if @filter_archived_only %>
     <%= link_to 'Show unarchived', vendor_orders_path(filter_archived_only: false), class: 'btn btn-primary btn-xs' %>
   <%else%>
     <%= link_to 'Show archived', vendor_orders_path(filter_archived_only: true), class: 'btn btn-primary btn-xs' %>
   <%end%>
+  <%= link_to 'Actions view', vendor_orders_path(actions_view: true, filter_archived_only: @filter_archived_only, filter_paid: @filter_paid), class: 'btn btn-primary btn-xs' %>
 <%end%>
 </p>
 
@@ -107,13 +108,13 @@
       <% if is_vendor? %>
         <td class="nowrap align-right">
           <%# Historically all action buttons were only on the order show screen but to make order processing easier for vendor, they were duplicated to the index screen. %>
-          <%# No accept button here because you need to view the order and look at postage details before accepting. %>
-          <% if order.status == Order::ACCEPTED %>
+          <%# No accept button here because you need to view the order and verify postage details valid before accepting. %>
+          <% if order.allow_shipped? %>
             <%= form_for([:vendor, order], method: 'post', url: vendor_ship_order_path(order, return_to_index: true), html: { class: 'inline' }) do |f| %>
               <%= f.submit 'Ship', class: 'btn btn-secondary btn-sm' %>
             <% end %>
           <%end%>
-          <% if order.allow_archive? && !order.archived_by_vendor %>
+          <% if order.allow_vendor_archive? %>
             <%= form_for([:vendor, order], method: 'post', url: vendor_archive_order_path(order, return_to_index: true), html: { class: 'inline' }) do |f| %>
               <%= f.submit 'Archive', class: 'btn btn-info btn-sm' %>
             <% end %>
@@ -127,7 +128,8 @@
         </td>
       <%else%><%# buyer %>
         <td class="nowrap align-right">
-          <% if [Order::ACCEPTED, Order::SHIPPED].include? order.status %>
+          <% if order.allow_finalize? %>
+             <%# Finalize button added to orders index to encourage using it. On the order view they forget. %>
              <%= link_to 'Finalize', finalize_confirm_order_path(order), class: 'btn btn-success btn-sm' %>
           <% end %>
         </td>

@@ -42,6 +42,7 @@ Rails.application.routes.draw do
     post 'orders/:id/ship', to: 'orders#ship', as: 'ship_order', format: false
     post 'orders/:id/payout_address', to: 'orders#payout_address', as: 'payout_address_order', format: false
     get 'order_payouts', to: 'order_payouts#index', as: 'order_payouts', format: false
+    post 'orders/actions', to: 'orders#actions', format: false
   end
   # Didn't want shippingoptions under vendor namespace because path helpers become too long and forms more complicated
   # and there is no need because we don't have separate users and vendors controllers.
@@ -70,7 +71,7 @@ Rails.application.routes.draw do
   get 'support', to: 'tickets#index', as: 'tickets', format: false
   post 'support', to: 'tickets#create', format: false
   get 'support/new', to: 'tickets#new', as: 'new_ticket', format: false
-  get 'support/:id', to: 'tickets#show', as: 'ticket', format: false   
+  get 'support/:id', to: 'tickets#show', as: 'ticket', format: false
   delete 'support/:id', to: 'tickets#destroy', format: false
   patch 'support/:id', to: 'tickets#update', format: false
   put 'support/:id', to: 'tickets#update', format: false
@@ -114,8 +115,8 @@ Rails.application.routes.draw do
     # Provide recipient user id in query string.
     get 'tickets/new', to: 'tickets#new', as: 'new_ticket', format: false
     get 'tickets', to: 'tickets#index', as: 'tickets', format: false
-    get 'tickets/:id', to: 'tickets#show', as: 'ticket', format: false   
-    get 'tickets/:id/edit', to: 'tickets#edit', as: 'edit_ticket', format: false   
+    get 'tickets/:id', to: 'tickets#show', as: 'ticket', format: false
+    get 'tickets/:id/edit', to: 'tickets#edit', as: 'edit_ticket', format: false
     patch 'tickets/:id', to: 'tickets#update', format: false
     put 'tickets/:id', to: 'tickets#update', format: false
     post 'tickets', to: 'tickets#create', format: false

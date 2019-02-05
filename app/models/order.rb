@@ -21,10 +21,9 @@ class Order < ApplicationRecord
   # Requires a unitprice association to do validation and user may have omitted this in form.
   # Also we are only wanting to check stocks when order created and confirmed so controller sets do_stock_validation=true.
   validate :stock_available, if: Proc.new { |o| o.do_stock_validation && o.unitprice != nil }
-  # This will prevent saving true to deleted_by_vendor or deleted_by_buyer fields unless state is permissible.
-  validate :allow_user_to_delete, if: Proc.new { |o| o.deleted_by_vendor == true || o.deleted_by_buyer == true }
+  validate :validate_delete, if: Proc.new { |o| o.deleted_by_vendor == true || o.deleted_by_buyer == true }
   validates :declined_reason, format: { with: /\A[[:print:]]*\z/, message: "unexpected characters" }, unless: Proc.new { declined_reason.nil? }
-  validates :address, format: { with: /-----BEGIN/, message: "must be PGP encrypted" }, if: Proc.new { !address.empty? && status == Order::PAYMENT_PENDING }
+  validates :address, format: { with: /-----BEGIN/, message: "must be PGP encrypted" }, if: Proc.new { !address.empty? && status == PAYMENT_PENDING }
   validates :address, format: { with: /\A[[[:print:]]\r\n]*\z/, message: "unexpected characters" }
   validates :refund_requested_fraction, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 }
   # Truncation in set_btc_price() could result in zero price order.
@@ -101,63 +100,12 @@ class Order < ApplicationRecord
     ADMIN_FINALIZED = 'admin finalized'
   ].freeze  # make immutable
 
-  def allow_user_to_delete
-    unless allow_delete?
-      errors.add(:order, 'state does not allow deletion')
-    end
-  end
-
-  def allow_admin_finalize?
-    vendor_payout.nil? && buyer_payout.nil?
-  end
-
-  def allow_feedback_submission?
-    [FINALIZED, AUTO_FINALIZED, REFUND_FINALIZED, ADMIN_FINALIZED].include?(self.status)
-  end
-
-  # Buyers and vendors can "delete" orders which hides it from their views.
-  # Allow delete if in end-state where no further status changes will occur.
-  # The controller will prevent delete when money owing to the user that has not been processed. That is too hard to test here.
-  def allow_delete?
-    [EXPIRED, PAID_NO_STOCK, DECLINED, FINALIZED, AUTO_FINALIZED,  REFUND_FINALIZED, ADMIN_FINALIZED].include?(self.status)
-  end
-
-  # Archiving is simply to limit what you see on your orders index. Decided it only makes sense for these order states.
-  # Expired orders may have a payment pending with low fee , so you may want to archive them until payment confirmed.
-  def allow_archive?
-    [EXPIRED, ACCEPTED, DECLINED, SHIPPED, FINALIZED, AUTO_FINALIZED, REFUND_REQUESTED, REFUND_FINALIZED, ADMIN_FINALIZED].include?(self.status)
-  end
-
-  def allow_admin_to_set_paid?
-    [EXPIRED, PAID_NO_STOCK, PAYMENT_PENDING].include?(self.status)
-  end
-
-  def hide_from_vendor
-    self.deleted_by_vendor = true
-  end
-
-  def hide_from_buyer
-    self.deleted_by_buyer = true
-  end
-
   def total_quantity
     quantity * unitprice.unit
   end
 
   def stock_available?
       total_quantity <= product.stock
-  end
-
-  def allow_extend_autofinalize?
-    # If status shipped and it will autofinalize in less than extend_autofinalize_duration.
-    status == SHIPPED &&
-         (finalize_at - Rails.configuration.extend_autofinalize_duration) < Time.now &&
-          finalize_at > Time.now         #  in case autofinalize script hasn't run yet (this order should be autofinalized).
-  end
-
-  def extend_autofinalize
-    self.finalize_at = Time.now + Rails.configuration.extend_autofinalize_duration
-    self.finalize_extended += 1    # record how many times extended.
   end
 
   # Assumes this order has a btc or litecoin address assigned.
@@ -314,6 +262,139 @@ class Order < ApplicationRecord
     end
   end
 
+  def allow_admin_finalize?
+    vendor_payout.nil? && buyer_payout.nil?
+  end
+
+  def allow_feedback_submission?
+    [FINALIZED, AUTO_FINALIZED, REFUND_FINALIZED, ADMIN_FINALIZED].include?(status)
+  end
+
+  def allow_buyer_delete?
+    [EXPIRED, PAID_NO_STOCK, DECLINED, FINALIZED, AUTO_FINALIZED,  REFUND_FINALIZED, ADMIN_FINALIZED].include?(status) &&
+      !(buyer_payout && buyer_payout.btc_amount > 0 && buyer_payout.paid == false)
+  end
+
+  def allow_vendor_delete?
+    [EXPIRED, PAID_NO_STOCK, DECLINED, FINALIZED, AUTO_FINALIZED,  REFUND_FINALIZED, ADMIN_FINALIZED].include?(status) &&
+      !(vendor_payout && vendor_payout.btc_amount > 0 && vendor_payout.paid == false)
+  end
+
+  # Archiving is simply to limit what vendors see on orders index. It only makes sense for these order states.
+  # Expired orders may have a payment pending with low fee , so you may want to archive them until payment confirmed.
+  # Accepted is here because it may not ship for a few weeks and move it out of sight.
+  def allow_vendor_archive?
+    [EXPIRED, ACCEPTED, DECLINED, SHIPPED, FINALIZED, AUTO_FINALIZED, REFUND_REQUESTED, REFUND_FINALIZED, ADMIN_FINALIZED].include?(status) &&
+      !archived_by_vendor
+  end
+
+  def allow_admin_to_set_paid?
+    [EXPIRED, PAID_NO_STOCK, PAYMENT_PENDING].include?(status)
+  end
+
+  def allow_accept?
+    status == PAID
+  end
+
+  def allow_shipped?
+    # When buyer finalizes early, the vendor still needs to update shipped day.
+    status == ACCEPTED || (status == FINALIZED && dispatched_on.nil?)
+  end
+
+  def allow_extend_autofinalize?
+    # If status shipped and it will autofinalize in less than extend_autofinalize_duration.
+    status == SHIPPED &&
+         (finalize_at - Rails.configuration.extend_autofinalize_duration) < Time.now &&
+          finalize_at > Time.now         #  in case autofinalize script hasn't run yet (this order should be autofinalized).
+  end
+
+  def allow_finalize?
+    [ACCEPTED, SHIPPED].include?(status)
+  end
+
+  def set_extend_autofinalize
+    if allow_extend_autofinalize?
+      self.finalize_at = Time.now + Rails.configuration.extend_autofinalize_duration
+      self.finalize_extended += 1    # record how many times extended.
+      save
+    else
+      false
+    end
+  end
+
+  def set_accepted
+    allow_accept? && update(status: ACCEPTED)
+  end
+
+  def set_shipped
+    if allow_shipped?
+      if status == ACCEPTED
+        self.status = SHIPPED
+        self.finalize_at = Time.now + Rails.configuration.autofinalize_duration
+      end
+      self.dispatched_on = Time.now
+      save
+    else
+      false
+    end
+  end
+
+  def set_request_refund(fraction)
+    if status == SHIPPED || status == REFUND_REQUESTED
+      update(status: REFUND_REQUESTED, refund_requested_fraction: fraction)
+    else
+      false
+    end
+  end
+
+  # The payout address is the bitcoin/litecoin address a buyer sets for refunds, or a vendor sets for payments.
+  # Allow address to be set and allow address to be changed if already been set.
+  # Originally the buyer and vendor payout amounts were attributes on the order.
+  # To facilitate exporting payouts easier, the payout info was moved to a new relation
+  # so each order has 0 - 2 associated payouts depending on state. When 2, one belongs to buyer, one to vendor.
+  # Instead of allowing the order model to support nested attribute updates, it was simpler and more secure to manually assign
+  # the payout address. With nested attributes you need to check if user authorized to update
+  # the associated OrderPayout and it also makes the form code harder to understand.
+  def set_buyer_payout(address)
+    if buyer_payout && buyer_payout.btc_amount > 0 && !buyer_payout.paid
+      self.buyer_payout.btc_address = address
+      self.buyer_payout.save
+    else
+      false
+    end
+  end
+
+  # A buyer finalizes an order to indicate it was received successfully and if escrow is being held it can be fully released to the vendor.
+  def set_finalized
+    (status == SHIPPED || status == ACCEPTED) && update(status: FINALIZED)
+  end
+
+  def set_declined(reason)
+    status == PAID && update(status: DECLINED, declined_reason: reason)
+  end
+
+  # Called when vendor accepts proposed refund amount.
+  def set_finalize_refund
+    status == REFUND_REQUESTED && update(status: REFUND_FINALIZED)
+  end
+
+  def set_vendor_archived
+    allow_vendor_archive? && update(archived_by_vendor: true)
+  end
+
+  def set_vendor_unarchived
+    archived_by_vendor == true && update(archived_by_vendor: false)
+  end
+
+  # return true only if update done.
+  def set_vendor_deleted
+    allow_vendor_delete? && update(deleted_by_vendor: true)
+  end
+
+  def set_buyer_deleted
+    allow_buyer_delete? && update(deleted_by_buyer: true)
+  end
+
   protected
     # As soon as status changes, automatically update appropriate order attributes and create order payouts when necessary.
     # It is possible to have payment_received greater than btc_price because users often overpay.
@@ -371,9 +452,6 @@ class Order < ApplicationRecord
           self.commission = payment_amount * commission_fraction
           self.vendor_payout = OrderPayout.new(btc_amount: payment_amount - commission, payout_type: 'vendor', user: vendor, btc_address: payout_address)
           self.finalized_at = Time.now
-        elsif status_was == ACCEPTED && status == SHIPPED
-          self.finalize_at = Time.now + Rails.configuration.autofinalize_duration
-          self.dispatched_on = Time.now
         elsif status_was == REFUND_REQUESTED && status == REFUND_FINALIZED
           self.buyer_payout = OrderPayout.new(btc_amount: payment_amount * refund_requested_fraction, payout_type: 'buyer', user: buyer)
           # Only create vendor payout if their amount is not zero. Don't care about creating buyer payout with zero payout amount.
@@ -404,6 +482,17 @@ class Order < ApplicationRecord
     def sum_product_and_shipping_in_currency(currencyCode)
       convertCurrency(unitprice.currency, currencyCode, quantity * unitprice.price) +
         convertCurrency(shippingoption.currency, currencyCode, shippingoption.price)
+    end
+
+    # This validation is more useful when scripts or console is updating the order because instance methods set_buyer_deleted(), set_vendor_deleted() already check.
+    def validate_delete
+      # this needs to look at the attributes new value and call allow_buyer_delete? or allow_vendor_delete?
+      if deleted_by_buyer_changed? && allow_buyer_delete? == false
+        errors.add(:order, 'state does not allow deletion or a buyer payout unpaid')
+      end
+      if deleted_by_vendor_changed? && allow_vendor_delete? == false
+        errors.add(:order, 'state does not allow deletion or a vendor payout unpaid')
+      end
     end
 
 end

@@ -138,77 +138,55 @@ class OrdersController < ApplicationController
   end
 
   # POST /orders/:id/payout_address
-  # The payout address is the bitcoin/litecoin address a buyer sets for refunds, or a vendor sets for payments.
-  # Allow address to be set and allow address to be changed if already been set.
-  # Originally the buyer and vendor payout amounts were attributes on the order.
-  # In order to make exporting payouts easier, the payout info was moved to a new relation
-  # so each order has 0 - 2 associated payouts depending on state. When 2, one belongs to buyer, one to vendor.
-  # Instead of allowing the order model to support nested attribute updates, it was simpler and more secure to manually assign
-  # the payout address. With nested attributes you need to check if user authorized to update
-  # the associated OrderPayout and it also makes the form code harder to understand.
   def payout_address
-    if @order.buyer_payout && @order.buyer_payout.btc_amount > 0 && !@order.buyer_payout.paid
-      @order.buyer_payout.btc_address = params.require('order')['payout_address']
-      if @order.buyer_payout.save
-        redirect_to @order, notice: 'Order refund address saved'
-      else
-        redirect_to @order, alert: "failed to set #{@order.payment_method.name} payout address, please ensure address is valid"
-      end
+    address = params.require('order')['payout_address']
+    if @order.set_buyer_payout(address)
+      redirect_to @order, notice: 'Order refund address saved'
     else
-      redirect_to @order, alert: 'not able to set refund address on this order'
+      logger.warn("failed to set_buyer_payout")
+      redirect_to @order, alert: "failed to set #{@order.payment_method.name} payout address, please ensure address is valid"
     end
   end
 
   def extend_autofinalize
-    if @order.allow_extend_autofinalize?
-      @order.extend_autofinalize()
-      @order.save!
+    if @order.set_extend_autofinalize()
       redirect_to @order, notice: 'Autofinalize has been extended'
     else
+      logger.warn("failed to set_extend_autofinalize")
       redirect_to @order, alert: 'error cannot extend autofinalize'
     end
   end
 
   def request_refund
-    if @order.status == Order::SHIPPED || @order.status == Order::REFUND_REQUESTED
-      @order.status = Order::REFUND_REQUESTED
-      if @order.update(params.require(:order).permit(:refund_requested_fraction))
-        redirect_to @order, notice: 'Order refund requested'
-      else
-        redirect_to @order, alert: 'failed to update order status'
-      end
+    fraction = params.require(:order)['refund_requested_fraction']
+    if @order.set_request_refund(fraction)
+      redirect_to @order, notice: 'Order refund requested'
     else
-      raise NotAuthorized
+      logger.warn("failed to set_request_refund")
+      redirect_to @order, alert: 'failed to update order status'
     end
   end
 
-  # A buyer finalizes an order to indicate it was received successfully and if escrow is being held it can be fully released to the vendor.
   def finalize
-    if @order.status == Order::SHIPPED || @order.status == Order::ACCEPTED
-      @order.status = Order::FINALIZED
-      if params[:return_to_index]
-        return_path = orders_path()
-      else
-        return_path = order_path(@order)
-      end
-      if @order.save
-        redirect_to return_path, notice: 'Order was finalized. Please submit feedback.'
-      else
-        redirect_to return_path, alert: 'failed to update order status'
-      end
+    if params[:return_to_index]
+      return_path = orders_path()
     else
-      raise NotAuthorized
+      return_path = order_path(@order)
+    end
+    if @order.set_finalized
+      redirect_to return_path, notice: 'Order was finalized. Please submit feedback.'
+    else
+      logger.warn("failed to set_finalized")
+      redirect_to return_path, alert: 'failed to update order status'
     end
   end
 
   def destroy
-    # Don't allow delete for states like ACCEPTED, SHIPPED because order not complete yet. Also don't allow delete when payouts allocated but not paid yet.
-    if !@order.allow_delete? || (@order.buyer_payout && @order.buyer_payout.btc_amount > 0 && !@order.buyer_payout.paid)
-      redirect_to @order, alert: 'cannot delete'
-    else
-      @order.hide_from_buyer
-      @order.save!
+    if @order.set_buyer_deleted
       redirect_to orders_path, notice: 'Order was deleted from list'
+    else
+      logger.warn("failed to set_buyer_deleted")
+      redirect_to @order, alert: 'cannot delete'
     end
   end
 

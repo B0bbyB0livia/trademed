@@ -3,6 +3,7 @@ class Vendor::OrdersController < ApplicationController
   before_action :require_vendor
 
   def index
+    @actions_view = false
     @filter_paid = false
     @filter_archived_only = false
     # by default show payment pending orders that are not archived and not deleted
@@ -29,10 +30,49 @@ class Vendor::OrdersController < ApplicationController
     respond_to do |format|
       format.csv { render layout: false, content_type: "text/plain" }
       format.html do
-        @orders = @orders.page(params[:page])
-        render 'orders/index'
+        if params[:actions_view] == 'true'
+          @actions_view = true
+          render :index_actions
+        else
+          @orders = @orders.page(params[:page])
+          render 'orders/index'
+        end
       end
     end
+  end
+
+  # Applies actions (accept, shipped, archive, delete) to multiple orders in a single request.
+  # Allow the vendor to use filters on the main index and then select this view and it will retain the filters.
+  # It would be nice to add a confirmation view in future that shows a table of order ids and actions.
+  def actions
+    accept_ids = params["accept_ids"] || []
+    shipped_ids = params["shipped_ids"] || []
+    archive_ids = params["archive_ids"] || []
+    delete_ids = params["delete_ids"] || []
+
+    raise NotAuthorized unless ((accept_ids & shipped_ids & archive_ids & delete_ids) - current_user.received_order_ids).empty?
+    if not (archive_ids & delete_ids).empty?
+      flash[:alert] = 'Choose either archive or delete but not both'
+    else
+      # Require all actions to complete or else none.
+      # An order can be shipped and archived in a single action so ordering of actions important. This is the only combination action permitted.
+      # In future, try allowing accept and shipped together. TODO.
+      Order.transaction do
+        r = Order.where(id: accept_ids).map(&:set_accepted)
+        r += Order.where(id: shipped_ids).map(&:set_shipped)
+        r += Order.where(id: archive_ids).map(&:set_vendor_archived)
+        r += Order.where(id: delete_ids).map(&:set_vendor_deleted)
+        if r.include?(false)
+          logger.warn("failed on at least one action to update order")
+          flash[:alert] = 'There was a problem changing state on one or more orders. No changes were made.'
+          raise ActiveRecord::Rollback
+        else
+          # This is count of actions applied so wording not quite right - shows 2 when one order shipped and archived.
+          flash[:notice] = "Actions were applied to #{r.size} orders."
+        end
+      end
+    end
+    redirect_to vendor_orders_path(actions_view: true, filter_archived_only: params[:filter_archived_only], filter_paid: params[:filter_paid])
   end
 
   def show
@@ -65,113 +105,82 @@ class Vendor::OrdersController < ApplicationController
   # This can be called from orders index or orders show views.
   # The form on orders index will only show when status is accepted. For that form submission we want to return to index, not the order show.
   def ship
-    if @order.status == Order::ACCEPTED
-      @order.status = Order::SHIPPED
-      if params[:return_to_index]
-        return_path = vendor_orders_path()
-      else
-        return_path = vendor_order_path(@order)
-      end
-      if @order.save
-        redirect_to return_path, notice: "Order for product: #{@order.title}, buyer: #{@order.buyer.displayname}, has been shipped"
-      else
-        redirect_to return_path, alert: 'error changing status'
-      end
-    elsif @order.status == Order::FINALIZED && @order.dispatched_on == nil
-      # Buyer finalized before vendor shipped but still need to record when shipped.
-      # Normally dispatched_on is set by a callback on state change to shipped but since no state is changing we set it here.
-      @order.dispatched_on = Time.now
-      if @order.save
-        redirect_to vendor_order_path(@order), notice: 'Shipped date set sucessfully'
-      else
-        redirect_to vendor_order_path(@order), alert: 'error setting shipped date'
-      end
+    if params[:return_to_index]
+      return_path = vendor_orders_path()
     else
-      raise NotAuthorized
+      return_path = vendor_order_path(@order)
+    end
+    if @order.set_shipped
+      redirect_to return_path, notice: "Order for product: #{@order.title}, buyer: #{@order.buyer.displayname}, has been shipped"
+    else
+      logger.warn("failed to set_shipped")
+      redirect_to return_path, alert: 'error updating shipped information'
     end
   end
 
   def accept
-    if @order.status == Order::PAID
-      @order.status = Order::ACCEPTED
-      if @order.save
-        notice = 'Order was accepted'
-        if @order.fe_required
-          notice << ' and then finalized automatically (no escrow order).'
-        end
-        redirect_to vendor_order_path(@order), notice: notice
-      else
-        redirect_to vendor_order_path(@order), alert: 'error changing status'
+    if @order.set_accepted
+      notice = 'Order was accepted'
+      if @order.fe_required
+        notice << ' and then finalized automatically (no escrow order).'
       end
+      redirect_to vendor_order_path(@order), notice: notice
     else
-      raise NotAuthorized
+      logger.warn("failed to set_accepted")
+      redirect_to vendor_order_path(@order), alert: 'error changing status'
     end
   end
 
   def archive
-    if @order.allow_archive?
-      if params[:return_to_index]
-        return_path = vendor_orders_path()
-      else
-        return_path = vendor_order_path(@order)
-      end
-      if @order.update(archived_by_vendor: true)
-        redirect_to vendor_orders_path, notice: "Order for product: #{@order.title}, buyer: #{@order.buyer.displayname}, has been archived"
-      else
-        redirect_to return_path, alert: 'error archiving order'
-      end
+    if params[:return_to_index]
+      return_path = vendor_orders_path()
     else
-      raise NotAuthorized
+      return_path = vendor_order_path(@order)
+    end
+
+    if @order.set_vendor_archived
+      redirect_to vendor_orders_path, notice: "Order for product: #{@order.title}, buyer: #{@order.buyer.displayname}, has been archived"
+    else
+      logger.warn("failed to set_vendor_archived")
+      redirect_to return_path, alert: 'error archiving order'
     end
   end
 
   def unarchive
-    if @order.archived_by_vendor
-      if @order.update(archived_by_vendor: false)
-        redirect_to vendor_orders_path(filter_archived_only: true), notice: "Order for product: #{@order.title}, buyer: #{@order.buyer.displayname}, has been unarchived"
-      else
-        redirect_to vendor_order_path(@order), alert: 'error unarchiving order'
-      end
+    if @order.set_vendor_unarchived
+      redirect_to vendor_orders_path(filter_archived_only: true), notice: "Order for product: #{@order.title}, buyer: #{@order.buyer.displayname}, has been unarchived"
     else
-      raise NotAuthorized
+      logger.warn("failed to set_vendor_unarchived")
+      redirect_to vendor_order_path(@order), alert: 'error unarchiving order'
     end
   end
 
   def decline
-    if @order.status == Order::PAID
-      @order.status = Order::DECLINED
-      if @order.update(params.require(:order).permit(:declined_reason))  # save reason
-        redirect_to vendor_order_path(@order), notice: 'Order has been declined'
-      else
-        # We can't render :show because @order has been modified so won't display correctly now.
-        redirect_to vendor_order_path(@order), alert: 'declined reason not saved, probably due to invalid characters'
-      end
+    reason = params.require(:order)['declined_reason']
+    if @order.set_declined(reason)
+      redirect_to vendor_order_path(@order), notice: 'Order has been declined'
     else
-      raise NotAuthorized
+      logger.warn("failed to set_declined")
+      # We can't render :show because @order has been modified so won't display correctly now.
+      redirect_to vendor_order_path(@order), alert: 'declined reason not saved, probably due to invalid characters'
     end
   end
 
   def finalize_refund
-    if @order.status == Order::REFUND_REQUESTED
-      @order.status = Order::REFUND_FINALIZED
-      if @order.save
-        redirect_to vendor_order_path(@order), notice: 'Order has been finalized with refund'
-      else
-        redirect_to vendor_order_path(@order), alert: 'error changing status'
-      end
+    if @order.set_finalize_refund
+      redirect_to vendor_order_path(@order), notice: 'Order has been finalized with refund'
     else
-      raise NotAuthorized
+      logger.warn("failed to set_finalize_refund")
+      redirect_to vendor_order_path(@order), alert: 'error changing status'
     end
   end
 
   def destroy
-    # Don't allow delete for states like ACCEPTED, SHIPPED because order not complete yet. Also don't allow delete when payouts allocated but not paid yet.
-    if !@order.allow_delete? || (@order.vendor_payout && @order.vendor_payout.btc_amount > 0 && !@order.vendor_payout.paid)
-      redirect_to vendor_order_path(@order), alert: 'cannot delete'
-    else
-      @order.hide_from_vendor
-      @order.save!
+    if @order.set_vendor_deleted
       redirect_to vendor_orders_path, notice: 'Order was deleted from list'
+    else
+      logger.warn("failed to set_vendor_deleted")
+      redirect_to vendor_order_path(@order), alert: 'cannot delete'
     end
   end
 

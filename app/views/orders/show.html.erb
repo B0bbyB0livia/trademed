@@ -4,7 +4,7 @@
 
 <%= render 'commonshow' %>
 
-<% if [Order::ACCEPTED, Order::SHIPPED].include? @order.status %>
+<% if @order.allow_finalize? %>
  <p>
    <%= link_to 'Finalize', '#finalize', class: 'btn btn-success form-button' %>
  </p>
@@ -33,7 +33,7 @@
   <%= link_to 'Submit feedback', new_feedback_path(order: @order.id), class: 'btn btn-primary form-button' %>
 <%end%>
 
-<% if @order.allow_delete? %>
+<% if @order.allow_buyer_delete? %>
   <%= link_to 'Delete', '#confirm_delete', class: 'btn btn-danger form-button' %>
 <% end %>
 
